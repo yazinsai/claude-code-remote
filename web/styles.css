@@ -1150,3 +1150,46 @@ kbd {
 #main-screen.mobile-keys-visible #terminal-container {
   padding-bottom: calc(56px + env(safe-area-inset-bottom));
 }
+
+/* ===== SCROLL TO BOTTOM BUTTON ===== */
+.scroll-bottom-btn {
+  position: fixed;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all var(--transition-fast);
+  z-index: 40;
+  box-shadow: var(--shadow-md);
+}
+
+.scroll-bottom-btn:not(.hidden) {
+  opacity: 0.8;
+  transform: translateY(0);
+}
+
+.scroll-bottom-btn:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.scroll-bottom-btn:active {
+  transform: scale(0.95);
+}
+
+/* Hide when mobile keyboard is visible */
+#main-screen.mobile-keys-visible .scroll-bottom-btn {
+  display: none;
+}

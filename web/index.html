@@ -107,6 +107,13 @@
       <!-- Terminal Container -->
       <div id="terminal-container" role="application" aria-label="Terminal"></div>
 
+      <!-- Scroll to bottom button (visible when terminal is scrolled up) -->
+      <button id="scroll-bottom-btn" class="scroll-bottom-btn hidden" title="Scroll to bottom" aria-label="Scroll to bottom">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
       <!-- Mobile Control Keys Toolbar (visible when keyboard is open on mobile) -->
       <div id="mobile-keys" class="mobile-keys hidden" role="toolbar" aria-label="Control keys">
         <button type="button" class="mobile-key" data-key="escape" aria-label="Escape">Esc</button>

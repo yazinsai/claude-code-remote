@@ -73,6 +73,9 @@ class ClaudeRemote {
 
       // Mobile keys
       mobileKeys: document.getElementById('mobile-keys'),
+
+      // Scroll to bottom
+      scrollBottomBtn: document.getElementById('scroll-bottom-btn'),
     };
 
     // Mobile keys state
@@ -183,6 +186,11 @@ class ClaudeRemote {
     // Use ResizeObserver for container changes
     const resizeObserver = new ResizeObserver(() => this.fitTerminal());
     resizeObserver.observe(this.elements.terminalContainer);
+
+    // Track scroll position for scroll-to-bottom button
+    this.terminal.onScroll(() => this.updateScrollButton());
+    // Also check when new content is written
+    this.terminal.onWriteParsed(() => this.updateScrollButton());
   }
 
   fitTerminal() {
@@ -242,6 +250,9 @@ class ClaudeRemote {
 
     // Reconnect
     this.elements.reconnectBtn.addEventListener('click', () => this.reconnect());
+
+    // Scroll to bottom
+    this.elements.scrollBottomBtn.addEventListener('click', () => this.scrollToBottom());
 
     // Mobile keys
     this.initMobileKeys();
@@ -702,6 +713,32 @@ class ClaudeRemote {
     const shiftBtn = this.elements.mobileKeys.querySelector('[data-key="shift"]');
     if (shiftBtn) {
       shiftBtn.setAttribute('aria-pressed', active);
+    }
+  }
+
+  // Scroll button methods
+  updateScrollButton() {
+    if (!this.terminal) return;
+
+    const buffer = this.terminal.buffer.active;
+    const totalLines = buffer.baseY + this.terminal.rows;
+    const currentScroll = buffer.viewportY;
+    const maxScroll = buffer.baseY;
+
+    // Show button if not at bottom (with small threshold for rounding)
+    const isAtBottom = currentScroll >= maxScroll - 1;
+
+    if (isAtBottom) {
+      this.elements.scrollBottomBtn.classList.add('hidden');
+    } else {
+      this.elements.scrollBottomBtn.classList.remove('hidden');
+    }
+  }
+
+  scrollToBottom() {
+    if (this.terminal) {
+      this.terminal.scrollToBottom();
+      this.elements.scrollBottomBtn.classList.add('hidden');
     }
   }
 }
