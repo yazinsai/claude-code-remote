@@ -131,7 +131,6 @@ body::before {
   width: 100%;
   max-width: 380px;
   text-align: center;
-  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes slideUp {

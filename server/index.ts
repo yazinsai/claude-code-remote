@@ -10,6 +10,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import qrcode from 'qrcode-terminal';
 import { SessionManager } from './session-manager.js';
+import type { ParsedOutput } from './pty-session.js';
 import { getAuthToken, validateToken, authMiddleware } from './auth.js';
 import { PortDetector } from './port-detector.js';
 import { createPortProxy } from './port-proxy.js';
@@ -120,7 +121,7 @@ const wss = new WebSocketServer({ server });
 interface ClientState {
   authenticated: boolean;
   sessionId: string | null;
-  outputHandler: ((data: { raw: string }) => void) | null;
+  outputHandler: ((data: { raw: string; parsed: ParsedOutput[] }) => void) | null;
   exitHandler: ((code: number) => void) | null;
 }
 
@@ -222,14 +223,25 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       state.sessionId = session.id;
 
       // Subscribe to session output - send as raw text
-      state.outputHandler = ({ raw }) => {
+      state.outputHandler = ({ raw, parsed }: { raw: string; parsed: ParsedOutput[] }) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(raw); // Send as text (not binary)
+
+          // Notify on ask_user events (input required)
+          if (parsed?.some((p: ParsedOutput) => p.type === 'ask_user')) {
+            const askEvent = parsed.find((p: ParsedOutput) => p.type === 'ask_user');
+            sendControl(ws, {
+              type: 'session:input_required',
+              sessionId: session.id,
+              sessionName: session.getInfo().cwd.split('/').pop(),
+              preview: askEvent?.content?.slice(0, 150) || 'Input needed',
+            });
+          }
         }
       };
       session.on('output', state.outputHandler);
 
-      state.exitHandler = (code) => {
+      state.exitHandler = (code: number) => {
         sendControl(ws, { type: 'session:exit', sessionId: session.id, exitCode: code });
       };
       session.on('exit', state.exitHandler);
@@ -256,14 +268,25 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       state.sessionId = session.id;
 
       // Subscribe to session output - send as raw text
-      state.outputHandler = ({ raw }) => {
+      state.outputHandler = ({ raw, parsed }: { raw: string; parsed: ParsedOutput[] }) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(raw); // Send as text (not binary)
+
+          // Notify on ask_user events (input required)
+          if (parsed?.some((p: ParsedOutput) => p.type === 'ask_user')) {
+            const askEvent = parsed.find((p: ParsedOutput) => p.type === 'ask_user');
+            sendControl(ws, {
+              type: 'session:input_required',
+              sessionId: session.id,
+              sessionName: session.getInfo().cwd.split('/').pop(),
+              preview: askEvent?.content?.slice(0, 150) || 'Input needed',
+            });
+          }
         }
       };
       session.on('output', state.outputHandler);
 
-      state.exitHandler = (code) => {
+      state.exitHandler = (code: number) => {
         sendControl(ws, { type: 'session:exit', sessionId: session.id, exitCode: code });
       };
       session.on('exit', state.exitHandler);
