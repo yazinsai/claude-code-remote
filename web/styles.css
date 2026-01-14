@@ -1080,23 +1080,24 @@ kbd {
 /* ===== MOBILE CONTROL KEYS TOOLBAR ===== */
 .mobile-keys {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   background: var(--bg-primary);
   border-top: 1px solid var(--border);
   z-index: 50;
-  transform: translateY(100%);
-  transition: transform var(--transition-smooth);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  /* bottom is set dynamically by JS */
 }
 
 .mobile-keys.visible {
-  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .mobile-key {
