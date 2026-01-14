@@ -1,0 +1,33 @@
+{
+  "name": "claude-code-remote",
+  "version": "0.1.0",
+  "description": "Mobile-first remote access to Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-remote": "./dist/index.js"
+  },
+  "scripts": {
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-*/spawn-helper 2>/dev/null || true",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch server/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.0",
+    "node-pty": "^1.0.0",
+    "qrcode-terminal": "^0.12.0",
+    "strip-ansi": "^7.1.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.2"
+  }
+}

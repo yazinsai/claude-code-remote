@@ -1,0 +1,329 @@
+/* Claude Code Remote - Terminal-based Styles */
+
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --text-primary: #d4d4d4;
+  --text-secondary: #808080;
+  --accent: #0078d4;
+  --accent-hover: #1e8cdc;
+  --border: #3c3c3c;
+  --error: #f14c4c;
+  --success: #23d18b;
+  --warning: #e5e510;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Screens */
+.screen {
+  display: none;
+  height: 100%;
+  flex-direction: column;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Auth Screen */
+#auth-screen {
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.auth-container h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.auth-container .subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-container input {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.auth-container input::placeholder {
+  color: var(--text-secondary);
+}
+
+.auth-container .error {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  min-height: 1.25rem;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-secondary);
+}
+
+.btn-icon {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Main Screen Header */
+#main-screen header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  z-index: 10;
+}
+
+#main-screen header.collapsed {
+  transform: translateY(-100%);
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.header-left, .header-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#session-select {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+/* Terminal Container */
+#terminal-container {
+  flex: 1;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+/* Make xterm fill container */
+#terminal-container .xterm {
+  height: 100%;
+  padding: 4px;
+}
+
+#terminal-container .xterm-viewport {
+  overflow-y: auto !important;
+}
+
+/* Preview Screen */
+#preview-screen header {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#port-select {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+#preview-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 400px;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.modal-content h2 {
+  margin-bottom: 1rem;
+  font-size: 1.125rem;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Utilities */
+.hidden {
+  display: none !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  #session-select {
+    min-width: 100px;
+    max-width: 150px;
+  }
+
+  .btn-icon {
+    padding: 0.5rem;
+  }
+}
+
+/* Prevent iOS zoom on input focus */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
+/* Touch-friendly terminal */
+@media (pointer: coarse) {
+  #terminal-container .xterm {
+    /* Larger touch targets */
+    touch-action: pan-y;
+  }
+}
+
+/* Safe area support for notched devices */
+@supports (padding: max(0px)) {
+  #main-screen header {
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+  }
+
+  #terminal-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

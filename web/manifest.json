@@ -1,0 +1,17 @@
+{
+  "name": "Claude Code Remote",
+  "short_name": "Claude Remote",
+  "description": "Control Claude Code from your mobile device",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e1e1e' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%2358a6ff'>C</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
