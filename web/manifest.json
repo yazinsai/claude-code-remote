@@ -1,17 +1,25 @@
 {
   "name": "Claude Code Remote",
   "short_name": "Claude Remote",
-  "description": "Control Claude Code from your mobile device",
+  "description": "Remote access to Claude Code sessions from any device",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e1e1e",
-  "theme_color": "#1e1e1e",
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e1e1e' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%2358a6ff'>C</text></svg>",
-      "sizes": "any",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23f0a500'/><stop offset='100%25' stop-color='%23ffb627'/></linearGradient></defs><rect fill='%230d1117' width='512' height='512' rx='102'/><text x='256' y='340' font-size='280' font-weight='bold' text-anchor='middle' fill='url(%23g)' font-family='system-ui'>C</text></svg>",
+      "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230d1117' width='512' height='512'/><text x='256' y='340' font-size='280' font-weight='bold' text-anchor='middle' fill='%23f0a500' font-family='system-ui'>C</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["developer", "productivity", "utilities"]
 }

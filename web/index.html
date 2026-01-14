@@ -4,9 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1e1e1e">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e1e1e' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%2358a6ff'>C</text></svg>">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Remote access to Claude Code sessions from any device">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23f0a500'/><stop offset='100%25' stop-color='%23ffb627'/></linearGradient></defs><rect fill='%230d1117' width='100' height='100' rx='20'/><text x='50' y='68' font-size='52' font-weight='bold' text-anchor='middle' fill='url(%23g)'>C</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230d1117' width='100' height='100'/><text x='50' y='68' font-size='52' font-weight='bold' text-anchor='middle' fill='%23f0a500'>C</text></svg>">
+
   <title>Claude Code Remote</title>
   <link rel="manifest" href="/manifest.json">
 
@@ -23,51 +29,123 @@
     <!-- Auth Screen -->
     <div id="auth-screen" class="screen active">
       <div class="auth-container">
+        <!-- Logo -->
+        <div class="auth-logo" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="16" fill="url(#logo-gradient)" fill-opacity="0.1"/>
+            <rect x="1" y="1" width="62" height="62" rx="15" stroke="url(#logo-gradient)" stroke-opacity="0.3" stroke-width="2"/>
+            <text x="32" y="44" font-size="32" font-weight="700" text-anchor="middle" fill="url(#logo-gradient)" font-family="Plus Jakarta Sans, system-ui, sans-serif">C</text>
+            <defs>
+              <linearGradient id="logo-gradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f0a500"/>
+                <stop offset="1" stop-color="#ffb627"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
         <h1>Claude Code Remote</h1>
-        <p class="subtitle">Connect to your local Claude Code session</p>
-        <input type="password" id="token-input" placeholder="Enter auth token" autocomplete="off">
-        <button id="connect-btn" class="btn-primary">Connect</button>
-        <p id="auth-error" class="error"></p>
+        <p class="subtitle">Connect to your local Claude Code session from anywhere</p>
+
+        <form id="auth-form" onsubmit="return false;">
+          <input
+            type="password"
+            id="token-input"
+            placeholder="Enter auth token"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            aria-label="Authentication token"
+          >
+          <button id="connect-btn" class="btn-primary" type="submit">
+            <span class="btn-text">Connect</span>
+            <span class="btn-loading" aria-hidden="true">
+              <svg class="spinner" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-opacity="0.3"/>
+                <path d="M10 2a8 8 0 0 1 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </button>
+        </form>
+
+        <p id="auth-error" class="error" role="alert" aria-live="polite"></p>
       </div>
     </div>
 
     <!-- Main Screen -->
     <div id="main-screen" class="screen">
       <!-- Collapsible Header -->
-      <header id="header">
+      <header id="header" role="toolbar" aria-label="Session controls">
         <div class="header-left">
-          <select id="session-select">
+          <select id="session-select" aria-label="Select session">
             <option value="">Select session...</option>
           </select>
-          <button id="new-session-btn" class="btn-icon" title="New Session">+</button>
+          <button id="new-session-btn" class="btn-icon" title="Create new session" aria-label="Create new session">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
         </div>
         <div class="header-right">
-          <button id="preview-btn" class="btn-icon" title="Port Preview">Preview</button>
-          <button id="toggle-header-btn" class="btn-icon" title="Toggle Header">^</button>
+          <button id="preview-btn" class="btn-icon" title="Port preview" aria-label="Open port preview">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </button>
+          <button id="toggle-header-btn" class="btn-icon" title="Toggle header" aria-label="Toggle header visibility" aria-expanded="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+          </button>
         </div>
       </header>
 
       <!-- Terminal Container -->
-      <div id="terminal-container"></div>
+      <div id="terminal-container" role="application" aria-label="Terminal"></div>
     </div>
 
     <!-- Preview Screen -->
     <div id="preview-screen" class="screen">
-      <header>
-        <button id="back-btn" class="btn-icon">&larr;</button>
-        <select id="port-select">
+      <header role="toolbar" aria-label="Preview controls">
+        <button id="back-btn" class="btn-icon" title="Back to terminal" aria-label="Back to terminal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+        <select id="port-select" aria-label="Select port to preview">
           <option value="">Select port...</option>
         </select>
-        <button id="refresh-preview-btn" class="btn-icon">Refresh</button>
+        <button id="refresh-preview-btn" class="btn-icon" title="Refresh preview" aria-label="Refresh preview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
       </header>
-      <iframe id="preview-frame" src="about:blank"></iframe>
+      <iframe id="preview-frame" src="about:blank" title="Port preview"></iframe>
     </div>
 
     <!-- New Session Modal -->
-    <div id="new-session-modal" class="modal hidden">
+    <div id="new-session-modal" class="modal hidden" role="dialog" aria-labelledby="modal-title" aria-modal="true">
       <div class="modal-content">
-        <h2>New Session</h2>
-        <input type="text" id="cwd-input" placeholder="Working directory (leave empty for current)">
+        <h2 id="modal-title">New Session</h2>
+        <p class="modal-description">Create a new terminal session with optional working directory.</p>
+        <input
+          type="text"
+          id="cwd-input"
+          placeholder="Working directory (leave empty for current)"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          aria-label="Working directory path"
+        >
         <div class="modal-actions">
           <button id="cancel-session-btn" class="btn-secondary">Cancel</button>
           <button id="create-session-btn" class="btn-primary">Create</button>

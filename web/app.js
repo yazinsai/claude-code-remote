@@ -69,34 +69,40 @@ class ClaudeRemote {
     // Create terminal with mobile-friendly settings
     this.terminal = new Terminal({
       cursorBlink: true,
-      cursorStyle: 'block',
+      cursorStyle: 'bar',
+      cursorWidth: 2,
       fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
+      fontWeight: '400',
+      fontWeightBold: '600',
+      letterSpacing: 0,
+      lineHeight: 1.2,
       theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-        cursor: '#d4d4d4',
-        cursorAccent: '#1e1e1e',
-        selectionBackground: '#264f78',
-        black: '#000000',
-        red: '#cd3131',
-        green: '#0dbc79',
-        yellow: '#e5e510',
-        blue: '#2472c8',
-        magenta: '#bc3fbc',
-        cyan: '#11a8cd',
-        white: '#e5e5e5',
-        brightBlack: '#666666',
-        brightRed: '#f14c4c',
-        brightGreen: '#23d18b',
-        brightYellow: '#f5f543',
-        brightBlue: '#3b8eea',
-        brightMagenta: '#d670d6',
-        brightCyan: '#29b8db',
-        brightWhite: '#ffffff',
+        background: '#0d1117',
+        foreground: '#f0f6fc',
+        cursor: '#f0a500',
+        cursorAccent: '#0d1117',
+        selectionBackground: 'rgba(240, 165, 0, 0.25)',
+        selectionForeground: '#f0f6fc',
+        black: '#484f58',
+        red: '#ff7b72',
+        green: '#3fb950',
+        yellow: '#d29922',
+        blue: '#58a6ff',
+        magenta: '#bc8cff',
+        cyan: '#39c5cf',
+        white: '#b1bac4',
+        brightBlack: '#6e7681',
+        brightRed: '#ffa198',
+        brightGreen: '#56d364',
+        brightYellow: '#e3b341',
+        brightBlue: '#79c0ff',
+        brightMagenta: '#d2a8ff',
+        brightCyan: '#56d4dd',
+        brightWhite: '#f0f6fc',
       },
       scrollback: 5000,
-      allowTransparency: false,
+      allowTransparency: true,
       convertEol: true,
     });
 
@@ -182,8 +188,8 @@ class ClaudeRemote {
   }
 
   toggleHeader() {
-    this.elements.header.classList.toggle('collapsed');
-    this.elements.toggleHeaderBtn.textContent = this.elements.header.classList.contains('collapsed') ? 'v' : '^';
+    const isCollapsed = this.elements.header.classList.toggle('collapsed');
+    this.elements.toggleHeaderBtn.setAttribute('aria-expanded', !isCollapsed);
     setTimeout(() => this.fitTerminal(), 300);
   }
 
@@ -197,7 +203,7 @@ class ClaudeRemote {
     this.token = token;
     this.elements.authError.textContent = '';
     this.elements.connectBtn.disabled = true;
-    this.elements.connectBtn.textContent = 'Connecting...';
+    this.elements.connectBtn.classList.add('loading');
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}`;
@@ -230,7 +236,7 @@ class ClaudeRemote {
     this.ws.onerror = () => {
       this.elements.authError.textContent = 'Connection failed';
       this.elements.connectBtn.disabled = false;
-      this.elements.connectBtn.textContent = 'Connect';
+      this.elements.connectBtn.classList.remove('loading');
     };
 
     this.ws.onclose = () => {
@@ -238,7 +244,7 @@ class ClaudeRemote {
         this.terminal.writeln('\r\n\x1b[33mDisconnected. Please reconnect.\x1b[0m');
       }
       this.elements.connectBtn.disabled = false;
-      this.elements.connectBtn.textContent = 'Connect';
+      this.elements.connectBtn.classList.remove('loading');
     };
   }
 
@@ -263,7 +269,7 @@ class ClaudeRemote {
       case 'auth:failed':
         this.elements.authError.textContent = message.error || 'Authentication failed';
         this.elements.connectBtn.disabled = false;
-        this.elements.connectBtn.textContent = 'Connect';
+        this.elements.connectBtn.classList.remove('loading');
         break;
 
       case 'session:list':
