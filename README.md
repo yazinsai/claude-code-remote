@@ -1,6 +1,6 @@
-# Claude Code Remote
-
-Access Claude Code from your phone. Go for a walk, sit on the couch, or work from bed - your AI pair programmer comes with you.
+<p align="center">
+  <img src="hero.png" alt="Claude Code Remote - Manage your Claude Code instances from your phone" width="100%" />
+</p>
 
 ```bash
 npm start
