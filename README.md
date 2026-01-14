@@ -3,7 +3,7 @@
 </p>
 
 ```bash
-npm start
+bun start
 ```
 
 That's it. Scan the QR code and you're in.
@@ -31,8 +31,8 @@ That's it. Scan the QR code and you're in.
 ```bash
 git clone https://github.com/yazinsai/claude-code-remote.git
 cd claude-code-remote
-npm install
-npm start
+bun install
+bun start
 ```
 
 You'll see:
@@ -60,7 +60,7 @@ Scan the QR code. Done.
 
 ## Requirements
 
-- Node.js 18+
+- [Bun](https://bun.sh)
 - [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/) (optional, for remote access)
 
 ```bash
