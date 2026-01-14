@@ -11,7 +11,7 @@
     "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-*/spawn-helper 2>/dev/null || true",
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "DEV_MODE=true bun --watch server/index.ts"
+    "dev": "DEV_MODE=true tsx watch server/index.ts"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

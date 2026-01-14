@@ -136,13 +136,15 @@ wss.on('connection', (ws: WebSocket) => {
     // Binary messages = control (JSON)
     // Text messages = terminal input (raw)
     if (isBinary) {
+      const str = Buffer.isBuffer(data) ? data.toString() : Buffer.from(data as ArrayBuffer).toString();
+      let message: ControlMessage;
       try {
-        const str = Buffer.isBuffer(data) ? data.toString() : Buffer.from(data as ArrayBuffer).toString();
-        const message = JSON.parse(str);
-        handleControlMessage(ws, state, message);
+        message = JSON.parse(str);
       } catch {
         sendControl(ws, { type: 'error', error: 'Invalid control message' });
+        return;
       }
+      handleControlMessage(ws, state, message);
     } else {
       // Raw terminal input - forward to PTY
       if (state.authenticated && state.sessionId) {
@@ -280,7 +282,11 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
     case 'resize': {
       const session = sessionManager.getSession(state.sessionId!);
       if (session && message.cols && message.rows) {
-        session.resize(message.cols, message.rows);
+        try {
+          session.resize(message.cols, message.rows);
+        } catch {
+          // PTY may have been closed, ignore resize errors
+        }
       }
       break;
     }
