@@ -635,9 +635,9 @@ class ClaudeRemote {
 
     if (keyboardOpen && this.elements.mainScreen.classList.contains('active')) {
       // Position toolbar just above the keyboard
-      // visualViewport.height is the visible area, offsetTop accounts for any scroll
-      const bottomPos = window.innerHeight - viewport.height - viewport.offsetTop;
-      this.elements.mobileKeys.style.bottom = `${bottomPos}px`;
+      // visualViewport.height is the visible area, keyboard height is the difference
+      const keyboardHeight = window.innerHeight - viewport.height;
+      this.elements.mobileKeys.style.bottom = `${keyboardHeight}px`;
       this.showMobileKeys();
     } else {
       this.hideMobileKeys();
