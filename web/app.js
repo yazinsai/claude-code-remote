@@ -77,6 +77,7 @@ class ClaudeRemote {
 
     // Mobile keys state
     this.ctrlActive = false;
+    this.shiftActive = false;
     this.lastViewportHeight = window.visualViewport?.height || window.innerHeight;
 
     // Autocomplete state
@@ -140,16 +141,30 @@ class ClaudeRemote {
     // Handle terminal input -> send to server
     this.terminal.onData((data) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN && this.currentSessionId) {
-        // Apply Ctrl modifier if active
-        if (this.ctrlActive && data.length === 1) {
+        // Apply modifiers if active
+        if (data.length === 1) {
           const char = data.charCodeAt(0);
-          // Convert a-z or A-Z to Ctrl+letter (Ctrl+A = 0x01, Ctrl+Z = 0x1A)
-          if (char >= 65 && char <= 90) { // A-Z
-            data = String.fromCharCode(char - 64);
-          } else if (char >= 97 && char <= 122) { // a-z
-            data = String.fromCharCode(char - 96);
+
+          // Apply Shift modifier (convert lowercase to uppercase)
+          if (this.shiftActive && char >= 97 && char <= 122) {
+            data = String.fromCharCode(char - 32);
+            this.setShiftActive(false);
           }
-          this.setCtrlActive(false); // Clear after use
+
+          // Apply Ctrl modifier (Ctrl+A = 0x01, Ctrl+Z = 0x1A)
+          if (this.ctrlActive) {
+            if (char >= 65 && char <= 90) { // A-Z
+              data = String.fromCharCode(char - 64);
+            } else if (char >= 97 && char <= 122) { // a-z
+              data = String.fromCharCode(char - 96);
+            }
+            this.setCtrlActive(false);
+          }
+
+          // Auto-dismiss keyboard on Enter (mobile only)
+          if ((char === 13 || char === 10) && this.elements.mobileKeys.classList.contains('visible')) {
+            this.terminal.blur();
+          }
         }
         this.ws.send(data); // Send as text
       }
@@ -628,8 +643,9 @@ class ClaudeRemote {
   hideMobileKeys() {
     this.elements.mobileKeys.classList.remove('visible');
     this.elements.mainScreen.classList.remove('mobile-keys-visible');
-    // Reset Ctrl state when hiding
+    // Reset modifier states when hiding
     this.setCtrlActive(false);
+    this.setShiftActive(false);
     this.fitTerminal();
     // Hide after animation
     setTimeout(() => {
@@ -649,8 +665,14 @@ class ClaudeRemote {
       case 'ctrl':
         this.setCtrlActive(!this.ctrlActive);
         return; // Don't send anything, just toggle state
+      case 'shift':
+        this.setShiftActive(!this.shiftActive);
+        return; // Don't send anything, just toggle state
       case 'tab':
         this.ws.send('\t');
+        break;
+      case 'slash':
+        this.ws.send('/');
         break;
       case 'up':
         this.ws.send('\x1b[A'); // Arrow up
@@ -660,9 +682,10 @@ class ClaudeRemote {
         break;
     }
 
-    // Clear Ctrl after sending a key (except when toggling Ctrl itself)
-    if (key !== 'ctrl' && this.ctrlActive) {
-      this.setCtrlActive(false);
+    // Clear modifiers after sending a key (except when toggling modifiers)
+    if (key !== 'ctrl' && key !== 'shift') {
+      if (this.ctrlActive) this.setCtrlActive(false);
+      if (this.shiftActive) this.setShiftActive(false);
     }
   }
 
@@ -671,6 +694,14 @@ class ClaudeRemote {
     const ctrlBtn = this.elements.mobileKeys.querySelector('[data-key="ctrl"]');
     if (ctrlBtn) {
       ctrlBtn.setAttribute('aria-pressed', active);
+    }
+  }
+
+  setShiftActive(active) {
+    this.shiftActive = active;
+    const shiftBtn = this.elements.mobileKeys.querySelector('[data-key="shift"]');
+    if (shiftBtn) {
+      shiftBtn.setAttribute('aria-pressed', active);
     }
   }
 }
