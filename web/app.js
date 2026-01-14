@@ -70,7 +70,14 @@ class ClaudeRemote {
       // Reconnect
       reconnectBanner: document.getElementById('reconnect-banner'),
       reconnectBtn: document.getElementById('reconnect-btn'),
+
+      // Mobile keys
+      mobileKeys: document.getElementById('mobile-keys'),
     };
+
+    // Mobile keys state
+    this.ctrlActive = false;
+    this.lastViewportHeight = window.visualViewport?.height || window.innerHeight;
 
     // Autocomplete state
     this.selectedSuggestionIndex = -1;
@@ -133,6 +140,17 @@ class ClaudeRemote {
     // Handle terminal input -> send to server
     this.terminal.onData((data) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN && this.currentSessionId) {
+        // Apply Ctrl modifier if active
+        if (this.ctrlActive && data.length === 1) {
+          const char = data.charCodeAt(0);
+          // Convert a-z or A-Z to Ctrl+letter (Ctrl+A = 0x01, Ctrl+Z = 0x1A)
+          if (char >= 65 && char <= 90) { // A-Z
+            data = String.fromCharCode(char - 64);
+          } else if (char >= 97 && char <= 122) { // a-z
+            data = String.fromCharCode(char - 96);
+          }
+          this.setCtrlActive(false); // Clear after use
+        }
         this.ws.send(data); // Send as text
       }
     });
@@ -209,6 +227,9 @@ class ClaudeRemote {
 
     // Reconnect
     this.elements.reconnectBtn.addEventListener('click', () => this.reconnect());
+
+    // Mobile keys
+    this.initMobileKeys();
   }
 
   showScreen(screenId) {
@@ -552,6 +573,100 @@ class ClaudeRemote {
       case 'Escape':
         this.hideSuggestions();
         break;
+    }
+  }
+
+  // Mobile keys methods
+  initMobileKeys() {
+    // Only init on touch devices
+    if (window.matchMedia('(pointer: fine)').matches) return;
+
+    // Handle mobile key button clicks
+    this.elements.mobileKeys.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mobile-key');
+      if (!btn) return;
+
+      const key = btn.dataset.key;
+      this.handleMobileKey(key);
+
+      // Keep terminal focused
+      this.terminal.focus();
+    });
+
+    // Detect keyboard visibility using visualViewport API
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => this.onViewportResize());
+    }
+  }
+
+  onViewportResize() {
+    const viewport = window.visualViewport;
+    const heightDiff = window.innerHeight - viewport.height;
+
+    // If viewport is significantly smaller than window, keyboard is likely open
+    // Using 150px threshold to account for keyboard
+    const keyboardOpen = heightDiff > 150;
+
+    if (keyboardOpen && this.elements.mainScreen.classList.contains('active')) {
+      this.showMobileKeys();
+    } else {
+      this.hideMobileKeys();
+    }
+  }
+
+  showMobileKeys() {
+    this.elements.mobileKeys.classList.remove('hidden');
+    this.elements.mobileKeys.classList.add('visible');
+    this.elements.mainScreen.classList.add('mobile-keys-visible');
+    this.fitTerminal();
+  }
+
+  hideMobileKeys() {
+    this.elements.mobileKeys.classList.remove('visible');
+    this.elements.mainScreen.classList.remove('mobile-keys-visible');
+    // Reset Ctrl state when hiding
+    this.setCtrlActive(false);
+    this.fitTerminal();
+    // Hide after animation
+    setTimeout(() => {
+      if (!this.elements.mobileKeys.classList.contains('visible')) {
+        this.elements.mobileKeys.classList.add('hidden');
+      }
+    }, 300);
+  }
+
+  handleMobileKey(key) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.currentSessionId) return;
+
+    switch (key) {
+      case 'escape':
+        this.ws.send('\x1b'); // ESC
+        break;
+      case 'ctrl':
+        this.setCtrlActive(!this.ctrlActive);
+        return; // Don't send anything, just toggle state
+      case 'tab':
+        this.ws.send('\t');
+        break;
+      case 'up':
+        this.ws.send('\x1b[A'); // Arrow up
+        break;
+      case 'down':
+        this.ws.send('\x1b[B'); // Arrow down
+        break;
+    }
+
+    // Clear Ctrl after sending a key (except when toggling Ctrl itself)
+    if (key !== 'ctrl' && this.ctrlActive) {
+      this.setCtrlActive(false);
+    }
+  }
+
+  setCtrlActive(active) {
+    this.ctrlActive = active;
+    const ctrlBtn = this.elements.mobileKeys.querySelector('[data-key="ctrl"]');
+    if (ctrlBtn) {
+      ctrlBtn.setAttribute('aria-pressed', active);
     }
   }
 }

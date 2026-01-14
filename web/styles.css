@@ -1076,3 +1076,76 @@ kbd {
   border-radius: 4px;
   box-shadow: 0 1px 0 var(--bg-hover);
 }
+
+/* ===== MOBILE CONTROL KEYS TOOLBAR ===== */
+.mobile-keys {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+  transform: translateY(100%);
+  transition: transform var(--transition-smooth);
+}
+
+.mobile-keys.visible {
+  transform: translateY(0);
+}
+
+.mobile-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 40px;
+  padding: 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: all var(--transition-fast);
+}
+
+.mobile-key:active {
+  transform: scale(0.95);
+  background: var(--bg-hover);
+}
+
+/* Modifier key (Ctrl) - sticky toggle style */
+.mobile-key-modifier[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--bg-deep);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Only show on touch devices */
+@media (pointer: fine) {
+  .mobile-keys {
+    display: none !important;
+  }
+}
+
+/* Adjust terminal container when toolbar is visible */
+.mobile-keys.visible + .floating-btn,
+.mobile-keys.visible ~ .floating-btn {
+  bottom: calc(56px + max(0.5rem, env(safe-area-inset-bottom)));
+}
+
+/* When mobile keys are visible, add padding to terminal */
+#main-screen.mobile-keys-visible #terminal-container {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}

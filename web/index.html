@@ -107,6 +107,15 @@
       <!-- Terminal Container -->
       <div id="terminal-container" role="application" aria-label="Terminal"></div>
 
+      <!-- Mobile Control Keys Toolbar (visible when keyboard is open on mobile) -->
+      <div id="mobile-keys" class="mobile-keys hidden" role="toolbar" aria-label="Control keys">
+        <button type="button" class="mobile-key" data-key="escape" aria-label="Escape">Esc</button>
+        <button type="button" class="mobile-key mobile-key-modifier" data-key="ctrl" aria-label="Control modifier" aria-pressed="false">Ctrl</button>
+        <button type="button" class="mobile-key" data-key="tab" aria-label="Tab">Tab</button>
+        <button type="button" class="mobile-key" data-key="up" aria-label="Arrow up">↑</button>
+        <button type="button" class="mobile-key" data-key="down" aria-label="Arrow down">↓</button>
+      </div>
+
       <!-- Floating expand button (visible when header collapsed) -->
       <button id="expand-header-btn" class="btn-icon floating-btn hidden" title="Show header" aria-label="Show header">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
