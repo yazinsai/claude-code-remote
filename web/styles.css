@@ -643,9 +643,7 @@ body::before {
 
 #terminal-container .xterm-viewport {
   overflow-y: auto !important;
-  display: flex !important;
-  flex-direction: column;
-  justify-content: flex-end;
+  -webkit-overflow-scrolling: touch;
 }
 
 #terminal-container .xterm-viewport::-webkit-scrollbar {
@@ -1159,7 +1157,7 @@ body::before {
 
 /* Touch-friendly terminal */
 @media (pointer: coarse) {
-  #terminal-container .xterm {
+  #terminal-container .xterm-screen {
     touch-action: pan-y pinch-zoom;
   }
 
