@@ -491,6 +491,34 @@ body {
   border: none;
 }
 
+/* Activity Status Indicators */
+.activity-indicator {
+  font-size: 0.625rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 1em;
+  text-align: center;
+  transition: color var(--transition);
+}
+
+.activity-indicator[data-status="busy"] {
+  color: var(--success);
+}
+
+.activity-indicator[data-status="idle"] {
+  color: var(--text-muted);
+}
+
+.activity-indicator[data-status="unknown"] {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Highlight busy sessions in the dropdown */
+#session-select option[data-status="busy"] {
+  color: var(--success);
+}
+
 /* External Sessions Button */
 .external-sessions-btn {
   display: inline-flex;
@@ -557,7 +585,7 @@ body {
 .external-session-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   font-size: 0.8125rem;
   font-family: var(--font-mono);
@@ -565,6 +593,10 @@ body {
   cursor: pointer;
   transition: background var(--transition);
   border-bottom: 1px solid var(--border);
+}
+
+.external-session-item .activity-indicator {
+  font-size: 0.75rem;
 }
 
 .external-session-item:last-child {

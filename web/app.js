@@ -327,6 +327,9 @@ class NotificationManager {
   }
 }
 
+// Activity status spinner frames (same as claude-glasses)
+const SPINNER_FRAMES = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+
 class ClaudeRemote {
   constructor() {
     this.ws = null;
@@ -338,6 +341,7 @@ class ClaudeRemote {
     this.externalSessions = [];
     this.sessionCache = new Map(); // Cache terminal content per session for instant switching
     this.reconnectInterval = null;
+    this.spinnerFrame = 0;
 
     // Check URL for token first, then localStorage
     const urlParams = new URLSearchParams(window.location.search);
@@ -356,6 +360,12 @@ class ClaudeRemote {
     // Initialize notification manager
     this.notificationManager = new NotificationManager(this);
     this.updateNotifyToggleState();
+
+    // Start spinner animation for busy indicators (100ms = smooth animation)
+    setInterval(() => {
+      this.spinnerFrame = (this.spinnerFrame + 1) % SPINNER_FRAMES.length;
+      this.updateSpinnerFrames();
+    }, 100);
 
     // Auto-connect if we have a token
     if (urlToken) {
@@ -944,6 +954,11 @@ class ClaudeRemote {
         );
         break;
 
+      case 'session:status':
+        // Update activity status for sessions without full re-render
+        this.updateSessionStatus(message.sessions);
+        break;
+
       case 'error':
         this.terminal.writeln(`\r\n\x1b[31mError: ${message.error}\x1b[0m`);
         break;
@@ -1038,7 +1053,11 @@ class ClaudeRemote {
     for (const session of sessions) {
       const option = document.createElement('option');
       option.value = session.id;
-      option.textContent = getDisplayName(session);
+      const indicator = session.activityStatus === 'busy'
+        ? SPINNER_FRAMES[this.spinnerFrame]
+        : '●';
+      option.textContent = `${indicator} ${getDisplayName(session)}`;
+      option.dataset.status = session.activityStatus || 'unknown';
       select.appendChild(option);
     }
 
@@ -1065,7 +1084,12 @@ class ClaudeRemote {
     } else {
       let tabsHtml = sessions.map(session => {
         const isActive = session.id === this.currentSessionId;
+        const indicator = session.activityStatus === 'busy'
+          ? SPINNER_FRAMES[this.spinnerFrame]
+          : '●';
+        const statusClass = session.activityStatus || 'unknown';
         return `<button class="session-tab" role="tab" aria-selected="${isActive}" data-session-id="${session.id}">
+          <span class="activity-indicator" data-status="${statusClass}">${indicator}</span>
           <span class="session-tab-name">${getDisplayName(session)}</span>
           <span class="session-tab-close" data-close-session="${session.id}" title="Close session">&times;</span>
         </button>`;
@@ -1075,7 +1099,12 @@ class ClaudeRemote {
       if (this.externalSessions.length > 0) {
         const dropdownHtml = this.externalSessions.map(external => {
           const folderName = getFolderName(external.cwd);
+          const indicator = external.activityStatus === 'busy'
+            ? SPINNER_FRAMES[this.spinnerFrame]
+            : '●';
+          const statusClass = external.activityStatus || 'unknown';
           return `<div class="external-session-item" data-external-pid="${external.pid}" data-external-cwd="${external.cwd}">
+            <span class="activity-indicator" data-status="${statusClass}">${indicator}</span>
             <div class="external-session-info">
               <div class="external-session-name">${folderName}</div>
               <div class="external-session-path">${external.cwd}</div>
@@ -1594,6 +1623,101 @@ class ClaudeRemote {
       this.terminal.scrollToBottom();
       this.elements.scrollBottomBtn.classList.add('hidden');
     }
+  }
+
+  // Update session activity status without full re-render
+  updateSessionStatus(sessions) {
+    // Update stored session data
+    for (const session of sessions) {
+      const existing = this.sessions.find(s => s.id === session.id);
+      if (existing) {
+        existing.activityStatus = session.activityStatus;
+      }
+    }
+    // Update status indicators in the DOM
+    this.updateActivityIndicators();
+  }
+
+  // Update all activity status indicators in tabs and dropdown
+  updateActivityIndicators() {
+    // Update tabs
+    this.elements.sessionTabs.querySelectorAll('.session-tab').forEach(tab => {
+      const sessionId = tab.dataset.sessionId;
+      const session = this.sessions.find(s => s.id === sessionId);
+      const indicator = tab.querySelector('.activity-indicator');
+      if (indicator && session) {
+        indicator.dataset.status = session.activityStatus || 'unknown';
+        if (session.activityStatus === 'busy') {
+          indicator.textContent = SPINNER_FRAMES[this.spinnerFrame];
+        } else {
+          indicator.textContent = '●';
+        }
+      }
+    });
+
+    // Update dropdown options
+    const options = this.elements.sessionSelect.querySelectorAll('option');
+    options.forEach(option => {
+      const sessionId = option.value;
+      if (!sessionId || sessionId.startsWith('external:')) return;
+      const session = this.sessions.find(s => s.id === sessionId);
+      if (session) {
+        const indicator = session.activityStatus === 'busy'
+          ? SPINNER_FRAMES[this.spinnerFrame]
+          : '●';
+        const statusClass = session.activityStatus || 'unknown';
+        // Update option text with indicator
+        const baseName = this.getDisplayName(session);
+        option.textContent = `${indicator} ${baseName}`;
+        option.dataset.status = statusClass;
+      }
+    });
+
+    // Update external session items
+    const externalItems = document.querySelectorAll('.external-session-item');
+    externalItems.forEach(item => {
+      const cwd = item.dataset.externalCwd;
+      const external = this.externalSessions.find(s => s.cwd === cwd);
+      const indicator = item.querySelector('.activity-indicator');
+      if (indicator && external) {
+        indicator.dataset.status = external.activityStatus || 'unknown';
+        if (external.activityStatus === 'busy') {
+          indicator.textContent = SPINNER_FRAMES[this.spinnerFrame];
+        } else {
+          indicator.textContent = '●';
+        }
+      }
+    });
+  }
+
+  // Update spinner frames for busy sessions
+  updateSpinnerFrames() {
+    // Only update if there are busy sessions
+    const hasBusy = this.sessions.some(s => s.activityStatus === 'busy') ||
+                    this.externalSessions.some(s => s.activityStatus === 'busy');
+    if (hasBusy) {
+      this.updateActivityIndicators();
+    }
+  }
+
+  // Helper to get display name for a session
+  getDisplayName(session) {
+    const getFolderName = (cwd) => {
+      const parts = cwd.split('/').filter(Boolean);
+      return parts[parts.length - 1] || cwd;
+    };
+
+    const folderCounts = new Map();
+    for (const s of this.sessions) {
+      const dirName = getFolderName(s.cwd);
+      folderCounts.set(dirName, (folderCounts.get(dirName) || 0) + 1);
+    }
+
+    const dirName = getFolderName(session.cwd);
+    if (folderCounts.get(dirName) > 1) {
+      return `${session.id.slice(0, 3)} ${dirName}`;
+    }
+    return dirName;
   }
 }
 

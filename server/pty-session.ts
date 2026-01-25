@@ -4,11 +4,14 @@ import stripAnsi from 'strip-ansi';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 
+export type ActivityStatus = 'busy' | 'idle' | 'unknown';
+
 export interface SessionInfo {
   id: string;
   cwd: string;
   createdAt: Date;
   status: 'running' | 'stopped';
+  activityStatus: ActivityStatus;
 }
 
 export interface ParsedOutput {
@@ -22,6 +25,8 @@ export interface ParsedOutput {
   };
 }
 
+const ACTIVITY_THRESHOLD_MS = 30000; // 30 seconds - same as external session detection
+
 export class PtySession extends EventEmitter {
   public readonly id: string;
   public readonly cwd: string;
@@ -33,6 +38,7 @@ export class PtySession extends EventEmitter {
   private static readonly MAX_HISTORY_SIZE = 100000; // ~100KB of history
   private status: 'running' | 'stopped' = 'stopped';
   private args: string[];
+  private lastActivityTime: number = Date.now();
 
   constructor(id: string, cwd: string, args: string[] = []) {
     super();
@@ -48,7 +54,16 @@ export class PtySession extends EventEmitter {
       cwd: this.cwd,
       createdAt: this.createdAt,
       status: this.status,
+      activityStatus: this.getActivityStatus(),
     };
+  }
+
+  getActivityStatus(): ActivityStatus {
+    if (this.status === 'stopped') {
+      return 'idle';
+    }
+    const now = Date.now();
+    return (now - this.lastActivityTime) < ACTIVITY_THRESHOLD_MS ? 'busy' : 'idle';
   }
 
   getHistory(): string {
@@ -130,6 +145,7 @@ export class PtySession extends EventEmitter {
 
     this.pty.onData((data: string) => {
       this.buffer += data;
+      this.lastActivityTime = Date.now(); // Track activity
 
       // Store in history (with size limit)
       this.outputHistory += data;

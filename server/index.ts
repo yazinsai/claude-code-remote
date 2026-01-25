@@ -128,7 +128,25 @@ interface ClientState {
   exitHandler: ((code: number) => void) | null;
 }
 
+// Broadcast activity status to all authenticated clients every 5 seconds
+setInterval(() => {
+  const sessions = sessionManager.listSessions();
+  const statusMessage = JSON.stringify({ type: 'session:status', sessions });
+  const statusBuffer = Buffer.from(statusMessage);
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      // Only send to authenticated clients (we track this via custom property)
+      const clientWithAuth = client as WebSocket & { isAuthenticated?: boolean };
+      if (clientWithAuth.isAuthenticated) {
+        client.send(statusBuffer);
+      }
+    }
+  });
+}, 5000);
+
 wss.on('connection', (ws: WebSocket) => {
+  const wsWithAuth = ws as WebSocket & { isAuthenticated?: boolean };
   const state: ClientState = {
     authenticated: false,
     sessionId: null,
@@ -210,6 +228,8 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
     case 'auth': {
       if (message.token && validateToken(message.token)) {
         state.authenticated = true;
+        // Mark WebSocket as authenticated for broadcast filtering
+        (ws as WebSocket & { isAuthenticated?: boolean }).isAuthenticated = true;
         const preferences = loadPreferences();
         sendControl(ws, { type: 'auth:success', preferences });
       } else {

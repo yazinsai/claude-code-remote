@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as os from 'os';
 import * as fs from 'fs';
+import { ActivityDetector, type ActivityStatus } from './activity-detector.js';
 
 const execAsync = promisify(exec);
 
@@ -10,9 +11,12 @@ export interface ExternalProcessInfo {
   cwd: string;
   command: string;
   args: string[];
+  activityStatus: ActivityStatus;
 }
 
 export class ProcessDetector {
+  private activityDetector = new ActivityDetector();
+
   /**
    * Detect external Claude Code CLI processes running on the system
    * @param excludePids PIDs to exclude (processes managed by this server)
@@ -82,6 +86,7 @@ export class ProcessDetector {
             cwd,
             command: executable,
             args,
+            activityStatus: this.activityDetector.getActivityStatus(cwd),
           });
         }
       }
