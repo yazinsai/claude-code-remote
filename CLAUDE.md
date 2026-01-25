@@ -53,3 +53,15 @@ Default port is 3456. Dev mode sets `DEV_MODE=true` for livereload integration.
 - `CLAUDE_REMOTE_TOKEN` - Override auto-generated auth token
 - `DEV_MODE` - Enable livereload for development
 - `CLAUDE_PATH` - Override Claude CLI path detection
+
+## Changelog
+
+**Always update `CHANGELOG.md` when making changes:**
+
+1. Add new features under `### Added` in the `[Unreleased]` section
+2. Add bug fixes under `### Fixed`
+3. Add breaking changes under `### Changed`
+4. Add deprecations under `### Deprecated`
+5. Add removals under `### Removed`
+
+Keep entries concise (one line each). When releasing, move unreleased items to a dated version section.
