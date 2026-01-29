@@ -54,6 +54,23 @@ Default port is 3456. Dev mode sets `DEV_MODE=true` for livereload integration.
 - `DEV_MODE` - Enable livereload for development
 - `CLAUDE_PATH` - Override Claude CLI path detection
 
+## Publishing to npm
+
+This package is published to npm as `claude-code-remote`. A GitHub Action auto-publishes when the version in `package.json` changes.
+
+**To release a new version:**
+
+1. Bump the version in `package.json` (e.g., `0.1.0` → `0.1.1`)
+2. Update `CHANGELOG.md` - move unreleased items to a new version section
+3. Commit and push to main
+
+The GitHub Action will automatically publish to npm if the version differs from what's currently published.
+
+**Manual publish (if needed):**
+```bash
+npm publish --otp=<code>
+```
+
 ## Changelog
 
 **Always update `CHANGELOG.md` when making changes:**
