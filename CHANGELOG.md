@@ -5,6 +5,7 @@ All notable changes to Claude Code Remote are documented here.
 ## [Unreleased]
 
 ### Added
+- npm package support - can now install via `npx claude-code-remote` or `npm install -g claude-code-remote`
 - Busy/idle activity status indicators for sessions - animated spinner for busy, static dot for idle
 - Activity indicators now shown for external sessions in mobile dropdown
 

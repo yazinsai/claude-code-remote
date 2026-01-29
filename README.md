@@ -3,7 +3,7 @@
 </p>
 
 ```bash
-bun start
+npx claude-code-remote
 ```
 
 That's it. Scan the QR code and you're in.
@@ -29,11 +29,14 @@ That's it. Scan the QR code and you're in.
 ## Getting Started
 
 ```bash
-git clone https://github.com/yazinsai/claude-code-remote.git
-cd claude-code-remote
-bun install
-bun run build
-bun start
+npx claude-code-remote
+```
+
+Or install globally:
+
+```bash
+npm install -g claude-code-remote
+claude-remote
 ```
 
 You'll see:
@@ -61,40 +64,30 @@ Scan the QR code. Done.
 
 ## Requirements
 
-- [Bun](https://bun.sh)
+- Node.js 18+
 - [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/) (optional, for remote access)
 
-### macOS
+### Installing cloudflared
 
+**macOS:**
 ```bash
 brew install cloudflared
 ```
 
-### Linux (Ubuntu/Debian)
-
-Linux requires build tools to compile the native terminal module.
-
+**Linux:**
 ```bash
-# Install bun (official installer - recommended)
-curl -fsSL https://bun.sh/install | bash
-
-# Install build dependencies
-sudo apt install -y build-essential python3
-
-# Install node-gyp (choose based on your Node.js source):
-# - NodeSource Node.js (node -v shows v18+, v20+, v22+, etc.):
-sudo npm install -g node-gyp
-# - Distribution Node.js (apt install nodejs):
-sudo apt install -y node-gyp
-
-# Install dependencies and run
-bun install
-bun start
+# See https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
 ```
 
-> **Note:** The `bun-js` snap has confinement restrictions that prevent native module compilation and loading. Use the official bun installer instead.
-
 Without cloudflared, you can still use it locally or set up your own tunnel (ngrok, Tailscale, etc).
+
+### Linux build dependencies
+
+Linux may require build tools to compile the native terminal module:
+
+```bash
+sudo apt install -y build-essential python3
+```
 
 ---
 

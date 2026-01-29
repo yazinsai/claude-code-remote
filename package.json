@@ -1,15 +1,38 @@
 {
   "name": "claude-code-remote",
   "version": "0.1.0",
-  "description": "Mobile-first remote access to Claude Code",
+  "description": "Mobile-first remote access to Claude Code sessions from your phone",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claude-remote": "./dist/index.js"
+    "claude-remote": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "web"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "terminal",
+    "remote",
+    "mobile",
+    "pty",
+    "websocket"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yazinsai/claude-code-remote.git"
+  },
+  "author": "",
+  "license": "MIT",
   "scripts": {
     "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-*/spawn-helper 2>/dev/null || true",
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "dev": "DEV_MODE=true tsx watch server/index.ts"
   },
