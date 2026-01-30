@@ -6,6 +6,11 @@ All notable changes to Claude Code Remote are documented here.
 
 ---
 
+## [0.1.4] - 2025-01-30
+
+### Fixed
+- Cross-platform postinstall script using Node.js instead of bash chmod
+
 ## [0.1.3] - 2025-01-30
 
 ### Fixed
