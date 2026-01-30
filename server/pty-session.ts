@@ -71,6 +71,18 @@ export class PtySession extends EventEmitter {
   }
 
   /**
+   * Check if a file is executable
+   */
+  private static isExecutable(filePath: string): boolean {
+    try {
+      fs.accessSync(filePath, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Find the claude CLI binary using multiple strategies:
    * 1. CLAUDE_PATH env var (explicit override)
    * 2. 'which claude' (respects user's PATH)
@@ -79,18 +91,23 @@ export class PtySession extends EventEmitter {
   private static findClaudeBinary(): string {
     // 1. Check CLAUDE_PATH env var first (explicit override)
     if (process.env.CLAUDE_PATH) {
-      if (fs.existsSync(process.env.CLAUDE_PATH)) {
-        return process.env.CLAUDE_PATH;
+      if (!fs.existsSync(process.env.CLAUDE_PATH)) {
+        throw new Error(
+          `CLAUDE_PATH is set to "${process.env.CLAUDE_PATH}" but file does not exist`
+        );
       }
-      throw new Error(
-        `CLAUDE_PATH is set to "${process.env.CLAUDE_PATH}" but file does not exist`
-      );
+      if (!this.isExecutable(process.env.CLAUDE_PATH)) {
+        throw new Error(
+          `CLAUDE_PATH is set to "${process.env.CLAUDE_PATH}" but file is not executable`
+        );
+      }
+      return process.env.CLAUDE_PATH;
     }
 
     // 2. Try to find via 'which claude' (respects user's PATH)
     try {
       const whichResult = execSync('which claude', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-      if (whichResult && fs.existsSync(whichResult)) {
+      if (whichResult && fs.existsSync(whichResult) && this.isExecutable(whichResult)) {
         return whichResult;
       }
     } catch {
@@ -107,7 +124,7 @@ export class PtySession extends EventEmitter {
     ];
 
     for (const fallbackPath of fallbackPaths) {
-      if (fs.existsSync(fallbackPath)) {
+      if (fs.existsSync(fallbackPath) && this.isExecutable(fallbackPath)) {
         return fallbackPath;
       }
     }
@@ -129,17 +146,28 @@ export class PtySession extends EventEmitter {
     // Find claude binary using multiple strategies
     const claudePath = PtySession.findClaudeBinary();
 
-    this.pty = pty.spawn(claudePath, this.args, {
-      name: 'xterm-256color',
-      cols: 120,
-      rows: 40,
-      cwd: this.cwd,
-      env: {
-        ...process.env,
-        TERM: 'xterm-256color',
-        FORCE_COLOR: '1',
-      },
-    });
+    try {
+      this.pty = pty.spawn(claudePath, this.args, {
+        name: 'xterm-256color',
+        cols: 120,
+        rows: 40,
+        cwd: this.cwd,
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          FORCE_COLOR: '1',
+        },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Failed to start Claude session in "${this.cwd}": ${message}\n` +
+          'This may happen if:\n' +
+          '  - The working directory does not exist\n' +
+          '  - You do not have permission to access the directory\n' +
+          '  - The Claude CLI is not properly installed'
+      );
+    }
 
     this.status = 'running';
 

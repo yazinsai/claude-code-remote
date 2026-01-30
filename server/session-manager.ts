@@ -12,8 +12,16 @@ export class SessionManager {
   createSession(cwd: string, args: string[] = []): PtySession {
     const id = uuidv4().slice(0, 8);
     const session = new PtySession(id, cwd, args);
+
+    try {
+      session.start();
+    } catch (err) {
+      // Don't add the session to the map if it failed to start
+      throw err;
+    }
+
+    // Only add to sessions map if start succeeded
     this.sessions.set(id, session);
-    session.start();
     return session;
   }
 

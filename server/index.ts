@@ -258,7 +258,28 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       } else if (cwd === '~') {
         cwd = process.env.HOME || process.cwd();
       }
-      const session = sessionManager.createSession(cwd);
+
+      // Validate that the directory exists
+      if (!fs.existsSync(cwd)) {
+        sendControl(ws, { type: 'error', error: `Directory does not exist: ${cwd}` });
+        break;
+      }
+
+      // Validate it's actually a directory
+      const stats = fs.statSync(cwd);
+      if (!stats.isDirectory()) {
+        sendControl(ws, { type: 'error', error: `Path is not a directory: ${cwd}` });
+        break;
+      }
+
+      let session;
+      try {
+        session = sessionManager.createSession(cwd);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create session';
+        sendControl(ws, { type: 'error', error: errorMessage });
+        break;
+      }
       state.sessionId = session.id;
 
       // Subscribe to session output - send as raw text

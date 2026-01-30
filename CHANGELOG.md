@@ -4,6 +4,10 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+---
+
+## [0.1.2] - 2025-01-30
+
 ### Added
 - npm package support - can now install via `npx claude-code-remote` or `npm install -g claude-code-remote`
 - Busy/idle activity status indicators for sessions - animated spinner for busy, static dot for idle
@@ -14,6 +18,8 @@ All notable changes to Claude Code Remote are documented here.
 - External sessions in mobile dropdown now show activity status instead of pin emoji
 - README missing build step before start command (fixes #3)
 - "require is not defined" error on Windows with Node.js v25+ (fixes #4)
+- "posix_spawnp failed" crash when creating session with invalid working directory
+- Better error messages when session creation fails (invalid cwd, non-executable binary)
 
 ---
 
