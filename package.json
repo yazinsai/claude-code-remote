@@ -1,6 +1,6 @@
 {
   "name": "claude-code-remote",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Mobile-first remote access to Claude Code sessions from your phone",
   "type": "module",
   "main": "dist/index.js",
@@ -9,7 +9,8 @@
   },
   "files": [
     "dist",
-    "web"
+    "web",
+    "scripts"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -30,7 +31,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "postinstall": "node -e \"const fs=require('fs'),p=require('path');['node_modules/node-pty','../node-pty'].forEach(d=>{try{fs.readdirSync(p.join(d,'prebuilds')).filter(f=>f.startsWith('darwin-')).forEach(f=>{try{fs.chmodSync(p.join(d,'prebuilds',f,'spawn-helper'),0o755)}catch(e){}})}catch(e){}})\"",
+    "postinstall": "node scripts/postinstall.cjs",
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",

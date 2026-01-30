@@ -6,6 +6,11 @@ All notable changes to Claude Code Remote are documented here.
 
 ---
 
+## [0.1.5] - 2025-01-30
+
+### Changed
+- Move postinstall to separate script file for readability and maintainability
+
 ## [0.1.4] - 2025-01-30
 
 ### Fixed
