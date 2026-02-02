@@ -517,6 +517,13 @@ class ClaudeRemote {
       const cmdKey = isMac ? e.metaKey : e.ctrlKey;
       const optKey = e.altKey;
 
+      // Handle Escape key explicitly (xterm.js doesn't always pass it through)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.ws.send('\x1b');
+        return false;
+      }
+
       // Handle Shift+Enter to insert newline instead of sending
       if (e.key === 'Enter' && e.shiftKey && !cmdKey && !optKey) {
         e.preventDefault();
