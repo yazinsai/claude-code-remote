@@ -218,6 +218,112 @@
       <iframe id="preview-frame" src="about:blank" title="Port preview"></iframe>
     </div>
 
+    <!-- Schedules Screen -->
+    <div id="schedules-screen" class="screen">
+      <header class="schedules-header" role="toolbar" aria-label="Schedule controls">
+        <button id="schedules-back-btn" class="btn-icon" title="Back to terminal" aria-label="Back to terminal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+        <h2 class="schedules-title">Scheduled Tasks</h2>
+        <span id="schedules-header-badge" class="schedule-badge hidden">0</span>
+        <div style="flex:1"></div>
+        <button id="new-schedule-btn" class="btn-primary btn-small" aria-label="New schedule">+ New</button>
+      </header>
+      <div id="schedules-list" class="schedules-list">
+        <div id="schedules-empty" class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <p>No scheduled tasks yet. Create one to run Claude on a recurring schedule.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Schedule Modal -->
+    <div id="new-schedule-modal" class="modal hidden" role="dialog" aria-labelledby="new-schedule-title" aria-modal="true">
+      <div class="modal-content">
+        <h2 id="new-schedule-title">New Scheduled Task</h2>
+        <p class="modal-description">Create a recurring task that runs Claude headlessly.</p>
+        <div class="schedule-form">
+          <input
+            type="text"
+            id="schedule-name-input"
+            placeholder="Task name (e.g. Daily code review)"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Schedule name"
+          >
+          <textarea
+            id="schedule-prompt-input"
+            placeholder="Prompt (e.g. Review open TODOs and summarize)"
+            rows="3"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Schedule prompt"
+          ></textarea>
+          <div class="autocomplete-wrapper">
+            <input
+              type="text"
+              id="schedule-cwd-input"
+              placeholder="Working directory (absolute path)"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              aria-label="Working directory path"
+              aria-autocomplete="list"
+              aria-controls="schedule-cwd-suggestions"
+            >
+            <ul id="schedule-cwd-suggestions" class="suggestions hidden" role="listbox"></ul>
+          </div>
+          <select id="schedule-preset-select" aria-label="Schedule frequency">
+            <option value="">Select schedule...</option>
+            <optgroup label="Daily">
+              <option value="Daily (morning)">Daily (morning, 7–10am)</option>
+              <option value="Daily (afternoon)">Daily (afternoon, 12–3pm)</option>
+              <option value="Daily (evening)">Daily (evening, 5–8pm)</option>
+            </optgroup>
+            <optgroup label="Weekdays">
+              <option value="Weekdays (morning)">Weekdays (morning, 7–10am)</option>
+              <option value="Weekdays (afternoon)">Weekdays (afternoon, 12–3pm)</option>
+              <option value="Weekdays (evening)">Weekdays (evening, 5–8pm)</option>
+            </optgroup>
+            <optgroup label="Weekly (Monday)">
+              <option value="Weekly (morning)">Weekly (morning, 7–10am)</option>
+              <option value="Weekly (afternoon)">Weekly (afternoon, 12–3pm)</option>
+              <option value="Weekly (evening)">Weekly (evening, 5–8pm)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-schedule-btn" class="btn-secondary">Cancel</button>
+          <button id="create-schedule-btn" class="btn-primary">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run Log Modal -->
+    <div id="run-log-modal" class="modal hidden" role="dialog" aria-labelledby="run-log-title" aria-modal="true">
+      <div class="modal-content run-log-content">
+        <div class="modal-header">
+          <h2 id="run-log-title">Run Log</h2>
+          <button id="close-run-log-btn" class="btn-icon" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <pre id="run-log-pre" class="run-log-pre"></pre>
+      </div>
+    </div>
+
     <!-- New Session Modal -->
     <div id="new-session-modal" class="modal hidden" role="dialog" aria-labelledby="modal-title" aria-modal="true">
       <div class="modal-content">

@@ -343,6 +343,12 @@ class ClaudeRemote {
     this.reconnectInterval = null;
     this.spinnerFrame = 0;
 
+    // Schedules state
+    this.schedules = [];
+    this.schedulesBadgeCount = 0;
+    this.schedulesLastViewed = 0;
+    this.expandedScheduleRuns = new Map(); // scheduleId -> RunLog[]
+
     // Check URL for token first, then localStorage
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('token');
@@ -433,6 +439,28 @@ class ClaudeRemote {
       settingsModal: document.getElementById('settings-modal'),
       closeSettingsBtn: document.getElementById('close-settings-btn'),
       notifyToggle: document.getElementById('notify-toggle'),
+
+      // Schedules
+      schedulesScreen: document.getElementById('schedules-screen'),
+      schedulesBackBtn: document.getElementById('schedules-back-btn'),
+      schedulesHeaderBadge: document.getElementById('schedules-header-badge'),
+      schedulesList: document.getElementById('schedules-list'),
+      schedulesEmpty: document.getElementById('schedules-empty'),
+      newScheduleBtn: document.getElementById('new-schedule-btn'),
+      // New schedule modal
+      newScheduleModal: document.getElementById('new-schedule-modal'),
+      scheduleNameInput: document.getElementById('schedule-name-input'),
+      schedulePromptInput: document.getElementById('schedule-prompt-input'),
+      scheduleCwdInput: document.getElementById('schedule-cwd-input'),
+      scheduleCwdSuggestions: document.getElementById('schedule-cwd-suggestions'),
+      schedulePresetSelect: document.getElementById('schedule-preset-select'),
+      cancelScheduleBtn: document.getElementById('cancel-schedule-btn'),
+      createScheduleBtn: document.getElementById('create-schedule-btn'),
+      // Run log modal
+      runLogModal: document.getElementById('run-log-modal'),
+      runLogTitle: document.getElementById('run-log-title'),
+      runLogPre: document.getElementById('run-log-pre'),
+      closeRunLogBtn: document.getElementById('close-run-log-btn'),
     };
 
     // Mobile keys state
@@ -444,6 +472,11 @@ class ClaudeRemote {
     this.selectedSuggestionIndex = -1;
     this.suggestions = [];
     this.debounceTimer = null;
+
+    // Schedule autocomplete state (separate from session cwd)
+    this.scheduleSelectedIndex = -1;
+    this.scheduleSuggestions = [];
+    this.scheduleDebounceTimer = null;
   }
 
   initTerminal() {
@@ -659,6 +692,14 @@ class ClaudeRemote {
       const value = e.target.value;
       if (!value) return;
 
+      // Check if it's the schedules option
+      if (value === 'schedules') {
+        this.showSchedules();
+        // Reset dropdown
+        e.target.value = this.currentSessionId || '';
+        return;
+      }
+
       // Check if it's an external session
       if (value.startsWith('external:')) {
         const pid = parseInt(value.replace('external:', ''), 10);
@@ -730,6 +771,20 @@ class ClaudeRemote {
 
     // Paste handling for images
     document.addEventListener('paste', (e) => this.handlePaste(e));
+
+    // Schedules
+    this.elements.schedulesBackBtn.addEventListener('click', () => this.hideSchedules());
+    this.elements.newScheduleBtn.addEventListener('click', () => this.showNewScheduleModal());
+    this.elements.cancelScheduleBtn.addEventListener('click', () => this.hideNewScheduleModal());
+    this.elements.createScheduleBtn.addEventListener('click', () => this.createSchedule());
+    this.elements.closeRunLogBtn.addEventListener('click', () => this.hideRunLogModal());
+
+    // Schedule cwd autocomplete
+    this.elements.scheduleCwdInput.addEventListener('input', () => this.onScheduleCwdInput());
+    this.elements.scheduleCwdInput.addEventListener('keydown', (e) => this.onScheduleCwdKeydown(e));
+    this.elements.scheduleCwdInput.addEventListener('blur', () => {
+      setTimeout(() => this.hideScheduleSuggestions(), 150);
+    });
   }
 
   showScreen(screenId) {
@@ -880,6 +935,7 @@ class ClaudeRemote {
         }
         this.sendControl({ type: 'session:list' });
         this.sendControl({ type: 'session:discover' });
+        this.sendControl({ type: 'schedule:list' });
         this.loadPorts();
         this.fitTerminal();
         // Re-attach to previous session if we have one
@@ -968,6 +1024,49 @@ class ClaudeRemote {
       case 'session:status':
         // Update activity status for sessions without full re-render
         this.updateSessionStatus(message.sessions, message.externalSessions);
+        break;
+
+      case 'schedule:list':
+        this.schedules = message.schedules || [];
+        this.renderSchedules();
+        break;
+
+      case 'schedule:runs':
+        if (message.scheduleId) {
+          this.expandedScheduleRuns.set(message.scheduleId, message.runs || []);
+          this.renderSchedules();
+        }
+        break;
+
+      case 'schedule:log':
+        if (message.content) {
+          this.showRunLogModal(message.content);
+        }
+        break;
+
+      case 'schedule:run_complete':
+        this.schedulesBadgeCount++;
+        this.updateScheduleBadge();
+        // Trigger push notification
+        if (this.notificationManager?.enabled && Notification.permission === 'granted') {
+          const status = message.exitCode === 0 ? 'completed' : 'failed';
+          if (this.notificationManager.registration?.active) {
+            this.notificationManager.registration.active.postMessage({
+              type: 'show-notification',
+              title: `Schedule ${status}: ${message.name}`,
+              body: `Exit code: ${message.exitCode}`,
+              sessionId: null,
+              tag: `schedule-${message.scheduleId}`
+            });
+          }
+        }
+        // Refresh schedule list to update lastRun
+        this.sendControl({ type: 'schedule:list' });
+        break;
+
+      case 'schedule:updated':
+        // Refresh the full list
+        this.sendControl({ type: 'schedule:list' });
         break;
 
       case 'error':
@@ -1070,6 +1169,18 @@ class ClaudeRemote {
       select.appendChild(option);
     }
 
+    // Add Schedules option to dropdown
+    const scheduleSep = document.createElement('option');
+    scheduleSep.disabled = true;
+    scheduleSep.textContent = '────────────';
+    select.appendChild(scheduleSep);
+
+    const scheduleOpt = document.createElement('option');
+    scheduleOpt.value = 'schedules';
+    const badgeText = this.schedulesBadgeCount > 0 ? ` (${this.schedulesBadgeCount})` : '';
+    scheduleOpt.textContent = `⏰ Schedules${badgeText}`;
+    select.appendChild(scheduleOpt);
+
     // Add external sessions to dropdown
     if (this.externalSessions.length > 0) {
       const separator = document.createElement('option');
@@ -1133,7 +1244,26 @@ class ClaudeRemote {
         </div>`;
       }
 
+      // Add Schedules tab button
+      const badgeHtml = this.schedulesBadgeCount > 0
+        ? `<span class="schedule-tab-badge">${this.schedulesBadgeCount}</span>`
+        : '';
+      tabsHtml += `<button class="schedule-tab-btn" id="schedules-tab-btn" aria-selected="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Schedules</span>
+        ${badgeHtml}
+      </button>`;
+
       tabs.innerHTML = tabsHtml;
+
+      // Add Schedules tab handler
+      const schedulesTabBtn = document.getElementById('schedules-tab-btn');
+      if (schedulesTabBtn) {
+        schedulesTabBtn.addEventListener('click', () => this.showSchedules());
+      }
 
       // Add click handlers for regular sessions
       tabs.querySelectorAll('.session-tab').forEach(tab => {
@@ -1766,6 +1896,352 @@ class ClaudeRemote {
     if (hasBusy) {
       this.updateActivityIndicators();
     }
+  }
+
+  // ===== SCHEDULE METHODS =====
+
+  showSchedules() {
+    this.showScreen('schedules-screen');
+    this.schedulesBadgeCount = 0;
+    this.schedulesLastViewed = Date.now();
+    this.updateScheduleBadge();
+    this.sendControl({ type: 'schedule:list' });
+  }
+
+  hideSchedules() {
+    this.showScreen('main-screen');
+  }
+
+  renderSchedules() {
+    const list = this.elements.schedulesList;
+
+    if (this.schedules.length === 0) {
+      this.elements.schedulesEmpty.style.display = '';
+      // Remove all cards but keep empty state
+      list.querySelectorAll('.schedule-card').forEach(c => c.remove());
+      return;
+    }
+
+    this.elements.schedulesEmpty.style.display = 'none';
+
+    // Build cards HTML
+    let html = '';
+    for (const schedule of this.schedules) {
+      const lastRunHtml = schedule.lastRun
+        ? `<div class="schedule-last-run">
+            <span class="run-status ${schedule.lastRun.exitCode === 0 ? 'success' : 'failure'}"></span>
+            <span>${schedule.lastRun.exitCode === 0 ? 'Success' : 'Failed'} - ${this.formatRunTimestamp(schedule.lastRun.timestamp)}</span>
+           </div>`
+        : `<div class="schedule-last-run"><span class="run-status pending"></span><span>No runs yet</span></div>`;
+
+      const runsData = this.expandedScheduleRuns.get(schedule.id);
+      let runsHtml = '';
+      if (runsData) {
+        if (runsData.length === 0) {
+          runsHtml = `<div class="schedule-runs-list"><div class="run-item"><span style="color:var(--text-muted)">No runs recorded</span></div></div>`;
+        } else {
+          runsHtml = `<div class="schedule-runs-list">${runsData.map(run => {
+            const statusClass = run.exitCode === 0 ? 'success' : (run.exitCode === null ? 'running' : 'failure');
+            const duration = run.durationMs ? this.formatDuration(run.durationMs) : '...';
+            return `<div class="run-item" data-schedule-id="${schedule.id}" data-run-timestamp="${run.timestamp}">
+              <span class="run-item-status ${statusClass}"></span>
+              <span class="run-item-time">${this.formatRunTimestamp(run.timestamp)}</span>
+              <span class="run-item-duration">${duration}</span>
+            </div>`;
+          }).join('')}</div>`;
+        }
+      }
+
+      const toggleLabel = runsData ? 'Hide runs' : 'View runs';
+
+      html += `<div class="schedule-card" data-schedule-id="${schedule.id}">
+        <div class="schedule-card-header">
+          <span class="schedule-card-name">${this.escapeHtml(schedule.name)}</span>
+          <div class="schedule-card-actions">
+            <button class="toggle schedule-toggle" role="switch" aria-checked="${schedule.enabled}" data-toggle-id="${schedule.id}">
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </button>
+            <button class="schedule-delete-btn" data-delete-id="${schedule.id}" title="Delete schedule">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="schedule-card-meta">
+          <div class="schedule-meta-row">
+            <span class="schedule-meta-label">Prompt</span>
+            <span class="schedule-meta-value prompt-value">${this.escapeHtml(schedule.prompt)}</span>
+          </div>
+          <div class="schedule-meta-row">
+            <span class="schedule-meta-label">Dir</span>
+            <span class="schedule-meta-value">${this.escapeHtml(schedule.cwd)}</span>
+          </div>
+          <div class="schedule-meta-row">
+            <span class="schedule-meta-label">Schedule</span>
+            <span class="schedule-meta-value">${this.escapeHtml(schedule.presetLabel)}</span>
+          </div>
+          <div class="schedule-meta-row">
+            <span class="schedule-meta-label">Last Run</span>
+            ${lastRunHtml}
+          </div>
+        </div>
+        <button class="schedule-runs-toggle" data-runs-id="${schedule.id}">${toggleLabel}</button>
+        ${runsHtml}
+      </div>`;
+    }
+
+    // Remove existing cards, keep empty state element
+    list.querySelectorAll('.schedule-card').forEach(c => c.remove());
+    list.insertAdjacentHTML('beforeend', html);
+
+    // Bind event handlers
+    list.querySelectorAll('.schedule-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.toggleId;
+        const currentEnabled = btn.getAttribute('aria-checked') === 'true';
+        this.toggleSchedule(id, !currentEnabled);
+      });
+    });
+
+    list.querySelectorAll('.schedule-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.deleteId;
+        this.deleteSchedule(id);
+      });
+    });
+
+    list.querySelectorAll('.schedule-runs-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.runsId;
+        this.viewRuns(id);
+      });
+    });
+
+    list.querySelectorAll('.run-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const scheduleId = item.dataset.scheduleId;
+        const timestamp = item.dataset.runTimestamp;
+        if (scheduleId && timestamp) {
+          this.viewRunLog(scheduleId, timestamp);
+        }
+      });
+    });
+  }
+
+  updateScheduleBadge() {
+    const headerBadge = this.elements.schedulesHeaderBadge;
+    if (this.schedulesBadgeCount > 0) {
+      headerBadge.textContent = this.schedulesBadgeCount;
+      headerBadge.classList.remove('hidden');
+    } else {
+      headerBadge.classList.add('hidden');
+    }
+    // Re-render session list to update tab badge
+    this.updateSessionList(this.sessions);
+  }
+
+  showNewScheduleModal() {
+    this.elements.newScheduleModal.classList.remove('hidden');
+    this.elements.scheduleNameInput.focus();
+  }
+
+  hideNewScheduleModal() {
+    this.elements.newScheduleModal.classList.add('hidden');
+    this.elements.scheduleNameInput.value = '';
+    this.elements.schedulePromptInput.value = '';
+    this.elements.scheduleCwdInput.value = '';
+    this.elements.schedulePresetSelect.value = '';
+  }
+
+  createSchedule() {
+    const name = this.elements.scheduleNameInput.value.trim();
+    const prompt = this.elements.schedulePromptInput.value.trim();
+    const cwd = this.elements.scheduleCwdInput.value.trim();
+    const preset = this.elements.schedulePresetSelect.value;
+
+    if (!name || !prompt || !cwd || !preset) {
+      return; // form validation - all fields required
+    }
+
+    this.sendControl({ type: 'schedule:create', name, prompt, cwd, preset });
+    this.hideNewScheduleModal();
+  }
+
+  toggleSchedule(id, enabled) {
+    this.sendControl({ type: 'schedule:update', scheduleId: id, enabled });
+  }
+
+  deleteSchedule(id) {
+    const schedule = this.schedules.find(s => s.id === id);
+    const name = schedule ? schedule.name : id;
+    if (confirm(`Delete schedule "${name}"?`)) {
+      this.expandedScheduleRuns.delete(id);
+      this.sendControl({ type: 'schedule:delete', scheduleId: id });
+    }
+  }
+
+  viewRuns(scheduleId) {
+    if (this.expandedScheduleRuns.has(scheduleId)) {
+      // Collapse
+      this.expandedScheduleRuns.delete(scheduleId);
+      this.renderSchedules();
+    } else {
+      // Expand - request runs from server
+      this.sendControl({ type: 'schedule:runs', scheduleId });
+    }
+  }
+
+  viewRunLog(scheduleId, timestamp) {
+    this.sendControl({ type: 'schedule:log', scheduleId, timestamp });
+  }
+
+  showRunLogModal(content) {
+    this.elements.runLogPre.textContent = content;
+    this.elements.runLogModal.classList.remove('hidden');
+  }
+
+  hideRunLogModal() {
+    this.elements.runLogModal.classList.add('hidden');
+    this.elements.runLogPre.textContent = '';
+  }
+
+  // Schedule CWD autocomplete
+  onScheduleCwdInput() {
+    clearTimeout(this.scheduleDebounceTimer);
+    this.scheduleDebounceTimer = setTimeout(() => this.fetchScheduleSuggestions(), 150);
+  }
+
+  async fetchScheduleSuggestions() {
+    const value = this.elements.scheduleCwdInput.value;
+    if (!value) {
+      this.hideScheduleSuggestions();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/dirs?path=${encodeURIComponent(value)}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+      this.scheduleSuggestions = await response.json();
+      this.scheduleSelectedIndex = -1;
+      this.renderScheduleSuggestions();
+    } catch (err) {
+      this.hideScheduleSuggestions();
+    }
+  }
+
+  renderScheduleSuggestions() {
+    const ul = this.elements.scheduleCwdSuggestions;
+
+    if (this.scheduleSuggestions.length === 0) {
+      this.hideScheduleSuggestions();
+      return;
+    }
+
+    ul.innerHTML = this.scheduleSuggestions.map((s, i) => `
+      <li role="option" data-index="${i}" class="${i === this.scheduleSelectedIndex ? 'selected' : ''}">
+        <span class="dir-name">${s.name}/</span>
+      </li>
+    `).join('');
+
+    ul.querySelectorAll('li').forEach(li => {
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const index = parseInt(li.dataset.index, 10);
+        this.selectScheduleSuggestion(index);
+      });
+    });
+
+    ul.classList.remove('hidden');
+  }
+
+  hideScheduleSuggestions() {
+    this.elements.scheduleCwdSuggestions.classList.add('hidden');
+    this.scheduleSuggestions = [];
+    this.scheduleSelectedIndex = -1;
+  }
+
+  selectScheduleSuggestion(index) {
+    if (index >= 0 && index < this.scheduleSuggestions.length) {
+      this.elements.scheduleCwdInput.value = this.scheduleSuggestions[index].path;
+      this.hideScheduleSuggestions();
+      this.elements.scheduleCwdInput.focus();
+      this.fetchScheduleSuggestions();
+    }
+  }
+
+  onScheduleCwdKeydown(e) {
+    if (this.scheduleSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        this.scheduleSelectedIndex = Math.min(
+          this.scheduleSelectedIndex + 1,
+          this.scheduleSuggestions.length - 1
+        );
+        this.renderScheduleSuggestions();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        this.scheduleSelectedIndex = Math.max(this.scheduleSelectedIndex - 1, -1);
+        this.renderScheduleSuggestions();
+        break;
+      case 'Tab':
+        if (this.scheduleSelectedIndex >= 0) {
+          e.preventDefault();
+          this.selectScheduleSuggestion(this.scheduleSelectedIndex);
+        } else if (this.scheduleSuggestions.length > 0) {
+          e.preventDefault();
+          this.selectScheduleSuggestion(0);
+        }
+        break;
+      case 'Enter':
+        if (this.scheduleSelectedIndex >= 0) {
+          e.preventDefault();
+          this.selectScheduleSuggestion(this.scheduleSelectedIndex);
+        }
+        break;
+      case 'Escape':
+        this.hideScheduleSuggestions();
+        break;
+    }
+  }
+
+  // Utility: format run timestamp for display
+  formatRunTimestamp(ts) {
+    if (!ts) return 'Unknown';
+    // timestamps may have colons replaced with dashes
+    const normalized = ts.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+    try {
+      const date = new Date(normalized);
+      if (isNaN(date.getTime())) return ts;
+      return date.toLocaleString(undefined, {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    } catch {
+      return ts;
+    }
+  }
+
+  // Utility: format duration in ms to human readable
+  formatDuration(ms) {
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}m ${secs}s`;
+  }
+
+  // Utility: escape HTML
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   // Helper to get display name for a session

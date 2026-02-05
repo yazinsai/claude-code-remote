@@ -88,7 +88,7 @@ export class PtySession extends EventEmitter {
    * 2. 'which claude' (respects user's PATH)
    * 3. Common fallback paths
    */
-  private static findClaudeBinary(): string {
+  public static findClaudeBinary(): string {
     // 1. Check CLAUDE_PATH env var first (explicit override)
     if (process.env.CLAUDE_PATH) {
       if (!fs.existsSync(process.env.CLAUDE_PATH)) {

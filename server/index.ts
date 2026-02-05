@@ -17,6 +17,7 @@ import { createPortProxy } from './port-proxy.js';
 import { startTunnel, type TunnelResult } from './tunnel/index.js';
 import { loadPreferences, savePreferences } from './preferences.js';
 import { parseConfig } from './config.js';
+import { Scheduler } from './scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +26,9 @@ const PORT = config.port;
 const DEV_MODE = config.devMode;
 const sessionManager = new SessionManager();
 const portDetector = new PortDetector();
+
+// Broadcast helper for scheduler (initialized after wss is created)
+let broadcastToAll: (msg: object) => void = () => {};
 
 const app = express();
 app.use(express.json());
@@ -121,6 +125,20 @@ const server = createServer(app);
 // WebSocket server
 const wss = new WebSocketServer({ server });
 
+// Initialize scheduler with broadcast
+broadcastToAll = (msg: object) => {
+  const buffer = Buffer.from(JSON.stringify(msg));
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      const clientWithAuth = client as WebSocket & { isAuthenticated?: boolean };
+      if (clientWithAuth.isAuthenticated) {
+        client.send(buffer);
+      }
+    }
+  });
+};
+const scheduler = new Scheduler(process.cwd(), broadcastToAll);
+
 interface ClientState {
   authenticated: boolean;
   sessionId: string | null;
@@ -216,6 +234,13 @@ interface ControlMessage {
   pid?: number;
   // Client-side caching
   hasCache?: boolean;
+  // Schedule fields
+  name?: string;
+  prompt?: string;
+  preset?: string;
+  scheduleId?: string;
+  enabled?: boolean;
+  timestamp?: string;
 }
 
 function handleControlMessage(ws: WebSocket, state: ClientState, message: ControlMessage) {
@@ -466,6 +491,81 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       break;
     }
 
+    case 'schedule:create': {
+      const { name, prompt, cwd, preset } = message;
+      if (!name || !prompt || !cwd || !preset) {
+        sendControl(ws, { type: 'error', error: 'Missing required schedule fields' });
+        break;
+      }
+      try {
+        const schedule = scheduler.createSchedule(name, prompt, cwd, preset);
+        broadcastToAll({ type: 'schedule:updated', schedule });
+      } catch (err) {
+        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Failed to create schedule' });
+      }
+      break;
+    }
+
+    case 'schedule:update': {
+      const { scheduleId, enabled } = message;
+      if (!scheduleId) {
+        sendControl(ws, { type: 'error', error: 'Missing scheduleId' });
+        break;
+      }
+      try {
+        const schedule = scheduler.updateSchedule(scheduleId, { enabled });
+        broadcastToAll({ type: 'schedule:updated', schedule });
+      } catch (err) {
+        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Failed to update schedule' });
+      }
+      break;
+    }
+
+    case 'schedule:delete': {
+      const { scheduleId } = message;
+      if (!scheduleId) {
+        sendControl(ws, { type: 'error', error: 'Missing scheduleId' });
+        break;
+      }
+      try {
+        scheduler.deleteSchedule(scheduleId);
+        broadcastToAll({ type: 'schedule:updated', deleted: scheduleId });
+      } catch (err) {
+        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Failed to delete schedule' });
+      }
+      break;
+    }
+
+    case 'schedule:list': {
+      sendControl(ws, { type: 'schedule:list', schedules: scheduler.listSchedules() });
+      break;
+    }
+
+    case 'schedule:runs': {
+      const { scheduleId } = message;
+      if (!scheduleId) {
+        sendControl(ws, { type: 'error', error: 'Missing scheduleId' });
+        break;
+      }
+      sendControl(ws, { type: 'schedule:runs', scheduleId, runs: scheduler.listRuns(scheduleId) });
+      break;
+    }
+
+    case 'schedule:log': {
+      const { scheduleId, timestamp } = message;
+      if (!scheduleId || !timestamp) {
+        sendControl(ws, { type: 'error', error: 'Missing scheduleId or timestamp' });
+        break;
+      }
+      try {
+        const content = scheduler.getRunLog(scheduleId, timestamp);
+        sendControl(ws, { type: 'schedule:log', scheduleId, timestamp, content });
+      } catch (err) {
+        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Run log not found' });
+      }
+      break;
+    }
+
     default:
       sendControl(ws, { type: 'error', error: `Unknown message type: ${message.type}` });
   }
@@ -491,6 +591,9 @@ function cleanupSessionHandlers(state: ClientState) {
 let tunnelResult: TunnelResult | null = null;
 
 // Start server
+// Load schedules before server starts listening
+scheduler.loadSchedules();
+
 server.listen(PORT, async () => {
   const token = getAuthToken();
 
@@ -529,6 +632,7 @@ server.listen(PORT, async () => {
 process.on('SIGINT', () => {
   console.log('\nShutting down...');
   tunnelResult?.cleanup();
+  scheduler.destroy();
   sessionManager.destroyAll();
   server.close();
   process.exit(0);

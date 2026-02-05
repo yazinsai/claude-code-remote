@@ -4,6 +4,18 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+### Added
+- Scheduled tasks: recurring task scheduling with randomized time-of-day windows (morning/afternoon/evening)
+- Dedicated Schedules panel accessible from session tabs (desktop) and dropdown (mobile)
+- Schedule CRUD: create, enable/disable, delete scheduled tasks
+- Headless execution via `claude -p` with stdout/stderr logging to disk
+- Run history with log viewer per schedule
+- Push notifications on schedule completion (success/failure)
+- UI badge for completed runs since last viewed
+- 7-day automatic log retention with hourly cleanup
+- Schedule persistence across server restarts via `.claude-remote/schedules.json`
+- Directory autocomplete in schedule creation form
+
 ---
 
 ## [0.1.5] - 2025-01-30
