@@ -1,6 +1,6 @@
 {
   "name": "claude-code-remote",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Mobile-first remote access to Claude Code sessions from your phone",
   "type": "module",
   "main": "dist/index.js",

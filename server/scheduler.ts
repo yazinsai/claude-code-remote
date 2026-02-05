@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import * as crypto from 'crypto';
 import cron from 'node-cron';
 import { PtySession } from './pty-session.js';
@@ -265,6 +266,14 @@ export class Scheduler {
     const startTime = Date.now();
     const timestamp = new Date().toISOString();
 
+    // Expand ~ to home directory (Node's spawn doesn't do shell expansion)
+    let cwd = schedule.cwd;
+    if (cwd.startsWith('~/')) {
+      cwd = cwd.replace('~/', `${os.homedir()}/`);
+    } else if (cwd === '~') {
+      cwd = os.homedir();
+    }
+
     // Ensure runs directory exists
     const scheduleRunsDir = path.join(this.runsDir, schedule.id);
     fs.mkdirSync(scheduleRunsDir, { recursive: true });
@@ -293,7 +302,7 @@ export class Scheduler {
     }
 
     const child: ChildProcess = spawn(claudePath, ['-p', schedule.prompt], {
-      cwd: schedule.cwd,
+      cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,

@@ -6,6 +6,13 @@ All notable changes to Claude Code Remote are documented here.
 
 ---
 
+## [0.1.7] - 2026-02-05
+
+### Fixed
+- Scheduled task execution fails with `ENOENT` when working directory contains `~` (not expanded by Node's `spawn`)
+
+---
+
 ## [0.1.6] - 2026-02-05
 
 ### Fixed
