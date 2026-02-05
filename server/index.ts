@@ -536,6 +536,21 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       break;
     }
 
+    case 'schedule:trigger': {
+      const { scheduleId } = message;
+      if (!scheduleId) {
+        sendControl(ws, { type: 'error', error: 'Missing scheduleId' });
+        break;
+      }
+      try {
+        scheduler.triggerSchedule(scheduleId);
+        sendControl(ws, { type: 'schedule:triggered', scheduleId });
+      } catch (err) {
+        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Failed to trigger schedule' });
+      }
+      break;
+    }
+
     case 'schedule:list': {
       sendControl(ws, { type: 'schedule:list', schedules: scheduler.listSchedules() });
       break;

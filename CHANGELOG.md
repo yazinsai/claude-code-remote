@@ -18,6 +18,7 @@ All notable changes to Claude Code Remote are documented here.
 - 7-day automatic log retention with hourly cleanup
 - Schedule persistence across server restarts via `.claude-remote/schedules.json`
 - Directory autocomplete in schedule creation form
+- Manual trigger (play) button on schedule cards to run a task immediately
 
 ---
 

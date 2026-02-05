@@ -161,6 +161,14 @@ export class Scheduler {
     return this.schedules.get(id);
   }
 
+  triggerSchedule(id: string): void {
+    const schedule = this.schedules.get(id);
+    if (!schedule) {
+      throw new Error(`Schedule not found: ${id}`);
+    }
+    this.executeSchedule(schedule);
+  }
+
   listRuns(scheduleId: string): RunLog[] {
     const scheduleRunsDir = path.join(this.runsDir, scheduleId);
     if (!fs.existsSync(scheduleRunsDir)) {

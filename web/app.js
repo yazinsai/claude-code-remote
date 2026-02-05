@@ -1958,6 +1958,11 @@ class ClaudeRemote {
         <div class="schedule-card-header">
           <span class="schedule-card-name">${this.escapeHtml(schedule.name)}</span>
           <div class="schedule-card-actions">
+            <button class="schedule-trigger-btn" data-trigger-id="${schedule.id}" title="Run now">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="6 3 20 12 6 21 6 3"/>
+              </svg>
+            </button>
             <button class="toggle schedule-toggle" role="switch" aria-checked="${schedule.enabled}" data-toggle-id="${schedule.id}">
               <span class="toggle-track"></span>
               <span class="toggle-thumb"></span>
@@ -2003,6 +2008,13 @@ class ClaudeRemote {
         const id = btn.dataset.toggleId;
         const currentEnabled = btn.getAttribute('aria-checked') === 'true';
         this.toggleSchedule(id, !currentEnabled);
+      });
+    });
+
+    list.querySelectorAll('.schedule-trigger-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.triggerId;
+        this.triggerSchedule(id);
       });
     });
 
@@ -2072,6 +2084,10 @@ class ClaudeRemote {
 
   toggleSchedule(id, enabled) {
     this.sendControl({ type: 'schedule:update', scheduleId: id, enabled });
+  }
+
+  triggerSchedule(id) {
+    this.sendControl({ type: 'schedule:trigger', scheduleId: id });
   }
 
   deleteSchedule(id) {
