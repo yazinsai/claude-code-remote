@@ -4,6 +4,9 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Scheduler crash: `ERR_STREAM_WRITE_AFTER_END` when child process emits both `error` and `close` events
+
 ### Added
 - Scheduled tasks: recurring task scheduling with randomized time-of-day windows (morning/afternoon/evening)
 - Dedicated Schedules panel accessible from session tabs (desktop) and dropdown (mobile)

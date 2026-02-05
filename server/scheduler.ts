@@ -293,20 +293,12 @@ export class Scheduler {
       },
     });
 
-    child.stdout?.on('data', (data: Buffer) => {
-      logStream.write(data);
-    });
+    let logEnded = false;
+    const finalizeLog = (exitCode: number, durationMs: number) => {
+      if (logEnded) return;
+      logEnded = true;
 
-    child.stderr?.on('data', (data: Buffer) => {
-      logStream.write(data);
-    });
-
-    child.on('close', (code: number | null) => {
-      const exitCode = code ?? 1;
-      const durationMs = Date.now() - startTime;
-      const finishedAt = new Date().toISOString();
-
-      logStream.write(`\n---\n# Finished: ${finishedAt}\n# Exit code: ${exitCode}\n# Duration: ${durationMs}ms\n`);
+      logStream.write(`\n---\n# Finished: ${new Date().toISOString()}\n# Exit code: ${exitCode}\n# Duration: ${durationMs}ms\n`);
       logStream.end();
 
       // Update schedule's lastRun
@@ -325,12 +317,23 @@ export class Scheduler {
         exitCode,
         timestamp: safeTimestamp,
       });
+    };
+
+    child.stdout?.on('data', (data: Buffer) => {
+      if (!logEnded) logStream.write(data);
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+      if (!logEnded) logStream.write(data);
+    });
+
+    child.on('close', (code: number | null) => {
+      finalizeLog(code ?? 1, Date.now() - startTime);
     });
 
     child.on('error', (err) => {
-      logStream.write(`\nProcess error: ${err.message}\n`);
-      logStream.write(`\n---\n# Finished: ${new Date().toISOString()}\n# Exit code: 1\n# Duration: ${Date.now() - startTime}ms\n`);
-      logStream.end();
+      if (!logEnded) logStream.write(`\nProcess error: ${err.message}\n`);
+      finalizeLog(1, Date.now() - startTime);
     });
 
     console.log(`[Scheduler] Executing "${schedule.name}" (${schedule.id})`);
