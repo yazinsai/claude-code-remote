@@ -4,6 +4,10 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+---
+
+## [0.1.6] - 2026-02-05
+
 ### Fixed
 - Scheduler crash: `ERR_STREAM_WRITE_AFTER_END` when child process emits both `error` and `close` events
 
