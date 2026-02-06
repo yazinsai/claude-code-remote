@@ -1877,8 +1877,7 @@ kbd {
 }
 
 .schedule-form input,
-.schedule-form textarea,
-.schedule-form select {
+.schedule-form textarea {
   width: 100%;
   padding: 0.625rem 0.75rem;
   font-size: 0.875rem;
@@ -1904,20 +1903,12 @@ kbd {
 }
 
 .schedule-form input:focus,
-.schedule-form textarea:focus,
-.schedule-form select:focus {
+.schedule-form textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
-.schedule-form select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.625rem center;
-  cursor: pointer;
-}
 
 .schedule-form .autocomplete-wrapper {
   margin-bottom: 0;

@@ -453,7 +453,7 @@ class ClaudeRemote {
       schedulePromptInput: document.getElementById('schedule-prompt-input'),
       scheduleCwdInput: document.getElementById('schedule-cwd-input'),
       scheduleCwdSuggestions: document.getElementById('schedule-cwd-suggestions'),
-      schedulePresetSelect: document.getElementById('schedule-preset-select'),
+      scheduleTextInput: document.getElementById('schedule-text-input'),
       cancelScheduleBtn: document.getElementById('cancel-schedule-btn'),
       createScheduleBtn: document.getElementById('create-schedule-btn'),
       // Run log modal
@@ -1065,8 +1065,15 @@ class ClaudeRemote {
         break;
 
       case 'schedule:updated':
+        this.resetScheduleCreateBtn();
+        this.hideNewScheduleModal();
         // Refresh the full list
         this.sendControl({ type: 'schedule:list' });
+        break;
+
+      case 'schedule:create_error':
+        this.resetScheduleCreateBtn();
+        alert(message.error || 'Failed to create schedule');
         break;
 
       case 'error':
@@ -1986,7 +1993,7 @@ class ClaudeRemote {
           </div>
           <div class="schedule-meta-row">
             <span class="schedule-meta-label">Schedule</span>
-            <span class="schedule-meta-value">${this.escapeHtml(schedule.presetLabel)}</span>
+            <span class="schedule-meta-value">${this.escapeHtml(schedule.presetLabel)} <span style="color:var(--text-muted)">(${this.escapeHtml(schedule.cronExpression)})</span></span>
           </div>
           <div class="schedule-meta-row">
             <span class="schedule-meta-label">Last Run</span>
@@ -2065,21 +2072,38 @@ class ClaudeRemote {
     this.elements.scheduleNameInput.value = '';
     this.elements.schedulePromptInput.value = '';
     this.elements.scheduleCwdInput.value = '';
-    this.elements.schedulePresetSelect.value = '';
+    this.elements.scheduleTextInput.value = '';
+    this.resetScheduleCreateBtn();
+  }
+
+  resetScheduleCreateBtn() {
+    const createBtn = document.getElementById('create-schedule-btn');
+    const cancelBtn = document.getElementById('cancel-schedule-btn');
+    if (createBtn) {
+      createBtn.textContent = 'Create';
+      createBtn.disabled = false;
+    }
+    if (cancelBtn) cancelBtn.disabled = false;
   }
 
   createSchedule() {
     const name = this.elements.scheduleNameInput.value.trim();
     const prompt = this.elements.schedulePromptInput.value.trim();
     const cwd = this.elements.scheduleCwdInput.value.trim();
-    const preset = this.elements.schedulePresetSelect.value;
+    const scheduleText = this.elements.scheduleTextInput.value.trim();
 
-    if (!name || !prompt || !cwd || !preset) {
+    if (!name || !prompt || !cwd || !scheduleText) {
       return; // form validation - all fields required
     }
 
-    this.sendControl({ type: 'schedule:create', name, prompt, cwd, preset });
-    this.hideNewScheduleModal();
+    // Show loading state
+    const createBtn = document.getElementById('create-schedule-btn');
+    const cancelBtn = document.getElementById('cancel-schedule-btn');
+    createBtn.textContent = 'Creating...';
+    createBtn.disabled = true;
+    cancelBtn.disabled = true;
+
+    this.sendControl({ type: 'schedule:create', name, prompt, cwd, scheduleText });
   }
 
   toggleSchedule(id, enabled) {

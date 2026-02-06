@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'child_process';
+import { spawn, execFile, type ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -120,6 +120,62 @@ export class Scheduler {
     this.saveSchedules();
 
     return schedule;
+  }
+
+  async createScheduleFromText(name: string, prompt: string, cwd: string, scheduleText: string): Promise<Schedule> {
+    const cronExpression = await this.textToCron(scheduleText);
+
+    if (!cron.validate(cronExpression)) {
+      throw new Error(`Claude returned an invalid cron expression: "${cronExpression}"`);
+    }
+
+    const schedule: Schedule = {
+      id: crypto.randomBytes(4).toString('hex'),
+      name,
+      prompt,
+      cwd,
+      cronExpression,
+      presetLabel: scheduleText,
+      enabled: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.schedules.set(schedule.id, schedule);
+    this.registerCronJob(schedule);
+    this.saveSchedules();
+
+    return schedule;
+  }
+
+  private textToCron(text: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let claudePath: string;
+      try {
+        claudePath = PtySession.findClaudeBinary();
+      } catch {
+        reject(new Error('Could not find claude binary'));
+        return;
+      }
+
+      const promptText = `Convert this schedule description to a cron expression. Only output the cron expression itself, nothing else. No explanation, no markdown, no backticks. Just the 5-field cron expression.\n\nSchedule: "${text}"`;
+
+      const child = execFile(claudePath, ['-p', promptText], {
+        timeout: 30000,
+        env: { ...process.env, FORCE_COLOR: '0' },
+      }, (err, stdout, stderr) => {
+        if (err) {
+          reject(new Error(`Claude failed to parse schedule: ${err.message}`));
+          return;
+        }
+        const result = stdout.trim().replace(/^`+|`+$/g, '');
+        if (!result) {
+          reject(new Error('Claude returned empty response'));
+          return;
+        }
+        console.log(`[Scheduler] Converted "${text}" → "${result}"`);
+        resolve(result);
+      });
+    });
   }
 
   updateSchedule(id: string, updates: { enabled?: boolean }): Schedule {

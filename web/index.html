@@ -282,24 +282,16 @@
             >
             <ul id="schedule-cwd-suggestions" class="suggestions hidden" role="listbox"></ul>
           </div>
-          <select id="schedule-preset-select" aria-label="Schedule frequency">
-            <option value="">Select schedule...</option>
-            <optgroup label="Daily">
-              <option value="Daily (morning)">Daily (morning, 7–10am)</option>
-              <option value="Daily (afternoon)">Daily (afternoon, 12–3pm)</option>
-              <option value="Daily (evening)">Daily (evening, 5–8pm)</option>
-            </optgroup>
-            <optgroup label="Weekdays">
-              <option value="Weekdays (morning)">Weekdays (morning, 7–10am)</option>
-              <option value="Weekdays (afternoon)">Weekdays (afternoon, 12–3pm)</option>
-              <option value="Weekdays (evening)">Weekdays (evening, 5–8pm)</option>
-            </optgroup>
-            <optgroup label="Weekly (Monday)">
-              <option value="Weekly (morning)">Weekly (morning, 7–10am)</option>
-              <option value="Weekly (afternoon)">Weekly (afternoon, 12–3pm)</option>
-              <option value="Weekly (evening)">Weekly (evening, 5–8pm)</option>
-            </optgroup>
-          </select>
+          <input
+            type="text"
+            id="schedule-text-input"
+            placeholder="e.g. every weekday at 9am, twice a week, daily at 3pm..."
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            aria-label="Schedule frequency"
+          >
         </div>
         <div class="modal-actions">
           <button id="cancel-schedule-btn" class="btn-secondary">Cancel</button>

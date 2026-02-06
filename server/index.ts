@@ -238,6 +238,7 @@ interface ControlMessage {
   name?: string;
   prompt?: string;
   preset?: string;
+  scheduleText?: string;
   scheduleId?: string;
   enabled?: boolean;
   timestamp?: string;
@@ -492,17 +493,18 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
     }
 
     case 'schedule:create': {
-      const { name, prompt, cwd, preset } = message;
-      if (!name || !prompt || !cwd || !preset) {
-        sendControl(ws, { type: 'error', error: 'Missing required schedule fields' });
+      const { name, prompt, cwd, scheduleText } = message;
+      if (!name || !prompt || !cwd || !scheduleText) {
+        sendControl(ws, { type: 'schedule:create_error', error: 'Missing required schedule fields' });
         break;
       }
-      try {
-        const schedule = scheduler.createSchedule(name, prompt, cwd, preset);
-        broadcastToAll({ type: 'schedule:updated', schedule });
-      } catch (err) {
-        sendControl(ws, { type: 'error', error: err instanceof Error ? err.message : 'Failed to create schedule' });
-      }
+      scheduler.createScheduleFromText(name, prompt, cwd, scheduleText)
+        .then(schedule => {
+          broadcastToAll({ type: 'schedule:updated', schedule });
+        })
+        .catch(err => {
+          sendControl(ws, { type: 'schedule:create_error', error: err instanceof Error ? err.message : 'Failed to create schedule' });
+        });
       break;
     }
 

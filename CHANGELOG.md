@@ -4,6 +4,9 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+### Changed
+- Schedule creation now accepts free-form text (e.g. "every weekday at 9am") instead of preset dropdown; uses `claude -p` to convert to cron expressions
+
 ---
 
 ## [0.1.7] - 2026-02-05
