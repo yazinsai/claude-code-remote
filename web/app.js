@@ -109,21 +109,21 @@ class TouchScrollManager {
 
     // If minimal movement and short duration, treat as tap and focus terminal
     if (this.totalMovement < TAP_THRESHOLD && duration < TAP_DURATION) {
-      // Hide overlay briefly to allow tap through
+      // Hide overlay briefly to find what's under the tap
       this.overlay.style.pointerEvents = 'none';
-
-      // Find element under the tap and click it
       const elem = document.elementFromPoint(this.startX, this.startY);
-      if (elem) {
-        elem.focus();
-        // Also trigger a click for good measure
-        elem.click();
+      this.overlay.style.pointerEvents = '';
+
+      // If tapped element is an interactive control (button, link, input), activate it
+      if (elem && elem.closest('button, a, input, select, textarea, [role="button"]')) {
+        elem.closest('button, a, input, select, textarea, [role="button"]').click();
+        return;
       }
 
-      // Restore overlay
-      setTimeout(() => {
-        this.overlay.style.pointerEvents = '';
-      }, 100);
+      // Otherwise focus the terminal via xterm API so the mobile keyboard appears.
+      // IMPORTANT: terminal.focus() must be called synchronously within the touch
+      // event handler for iOS/Android to show the virtual keyboard.
+      this.terminal.focus();
       return;
     }
 
