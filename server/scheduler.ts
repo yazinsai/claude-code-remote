@@ -123,10 +123,16 @@ export class Scheduler {
   }
 
   async createScheduleFromText(name: string, prompt: string, cwd: string, scheduleText: string): Promise<Schedule> {
-    const cronExpression = await this.textToCron(scheduleText);
-
-    if (!cron.validate(cronExpression)) {
-      throw new Error(`Claude returned an invalid cron expression: "${cronExpression}"`);
+    // If the input is already a valid cron expression, use it directly
+    let cronExpression: string;
+    if (cron.validate(scheduleText.trim())) {
+      cronExpression = scheduleText.trim();
+      console.log(`[Scheduler] Input "${scheduleText}" is already a valid cron expression`);
+    } else {
+      cronExpression = await this.textToCron(scheduleText);
+      if (!cron.validate(cronExpression)) {
+        throw new Error(`Claude returned an invalid cron expression: "${cronExpression}"`);
+      }
     }
 
     const schedule: Schedule = {

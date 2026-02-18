@@ -6,6 +6,14 @@ All notable changes to Claude Code Remote are documented here.
 
 ---
 
+## [0.1.9] - 2026-02-18
+
+### Fixed
+- Schedule creation fails when entering a valid cron expression directly — was unnecessarily invoking Claude CLI to "convert" an already-valid cron string
+- Mobile keyboard unreliable on tap — `touchmove` was calling `preventDefault()` unconditionally which broke the user activation chain on iOS/Android, preventing virtual keyboard from appearing
+
+---
+
 ## [0.1.8] - 2026-02-10
 
 ### Fixed

@@ -11,6 +11,8 @@ class TouchScrollManager {
     this.VELOCITY_THRESHOLD = 10; // px/s - minimum velocity to trigger momentum
     // LINE_HEIGHT = fontSize (14) * lineHeight (1.2) = 16.8, rounded to 17
     this.LINE_HEIGHT = 17;
+    this.TAP_THRESHOLD = 10; // px - max movement to still count as a tap
+    this.TAP_DURATION = 300; // ms - max duration to still count as a tap
 
     // State
     this.tracking = false;
@@ -48,6 +50,16 @@ class TouchScrollManager {
     this.overlay.addEventListener('touchcancel', () => {
       this.tracking = false;
     });
+
+    // Fallback: if the browser synthesizes a click from a tap, use it to focus the terminal.
+    // This catches cases where touchend didn't trigger the keyboard (e.g. some Android browsers).
+    this.overlay.addEventListener('click', (e) => {
+      const elem = document.elementFromPoint(e.clientX, e.clientY);
+      if (elem && elem.closest('button, a, input, select, textarea, [role="button"]')) {
+        return; // Let interactive elements handle their own clicks
+      }
+      this.terminal.focus();
+    });
   }
 
   onTouchStart(e) {
@@ -70,8 +82,6 @@ class TouchScrollManager {
   onTouchMove(e) {
     if (!this.tracking || e.touches.length !== 1) return;
 
-    e.preventDefault(); // Prevent page bounce
-
     const currentY = e.touches[0].clientY;
     const currentTime = Date.now();
     const deltaY = this.lastY - currentY;
@@ -79,6 +89,13 @@ class TouchScrollManager {
 
     // Track total movement to distinguish taps from swipes
     this.totalMovement += Math.abs(deltaY);
+
+    // Only prevent default (page bounce) once we've confirmed this is a scroll gesture.
+    // Calling preventDefault() too early breaks the user activation chain on iOS/Android,
+    // which prevents the virtual keyboard from appearing on terminal.focus().
+    if (this.totalMovement >= this.TAP_THRESHOLD) {
+      e.preventDefault();
+    }
 
     if (deltaTime > 0) {
       // Exponential smoothing for velocity
@@ -104,11 +121,9 @@ class TouchScrollManager {
     this.tracking = false;
 
     const duration = Date.now() - this.startTime;
-    const TAP_THRESHOLD = 10; // pixels
-    const TAP_DURATION = 300; // ms
 
     // If minimal movement and short duration, treat as tap and focus terminal
-    if (this.totalMovement < TAP_THRESHOLD && duration < TAP_DURATION) {
+    if (this.totalMovement < this.TAP_THRESHOLD && duration < this.TAP_DURATION) {
       // Hide overlay briefly to find what's under the tap
       this.overlay.style.pointerEvents = 'none';
       const elem = document.elementFromPoint(this.startX, this.startY);
