@@ -4,6 +4,9 @@ All notable changes to Claude Code Remote are documented here.
 
 ## [Unreleased]
 
+### Added
+- Auth token now persists across server restarts to `~/.claude-code-remote/auth.json` — scan the QR once and future restarts keep the same URL so paired devices stay authenticated. Pass `--rotate-token` to invalidate and regenerate.
+
 ---
 
 ## [0.1.9] - 2026-02-18
